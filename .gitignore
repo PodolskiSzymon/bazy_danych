@@ -2,3 +2,4 @@ narzedzia/mapa-warstw.html
 narzedzia/layer*.json
 __pycache__/
 *.pyc
+narzedzia/diagramy.html
