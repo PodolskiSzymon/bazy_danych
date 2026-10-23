@@ -31,9 +31,9 @@ Etap obecny: **projekt na papierze, przed SQL** – wszystkie osoby (w tym progr
 
 ## Nazwy programów
 
-Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Taki sam jest jego klucz w kodzie i w adresie strony, np. `laczyciel-kont`, `trener-ai`, `uruchamiacz-zadan`. Obrazy w `docs/img/` pochodzą sprzed zmiany i mają jeszcze dawne nazwy – poniżej ich odpowiedniki.
+Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Taki sam jest jego klucz w kodzie i w adresie strony, np. `laczyciel-kont`, `trener-ai`, `uruchamiacz-zadan`. Dawne nazwy (metafory zawodów) i ich odpowiedniki:
 
-| Dawna nazwa (na obrazach) | Obecna nazwa |
+| Dawna nazwa | Obecna nazwa |
 |---|---|
 | Rejestrator kont firm | Importer kont firm |
 | Urzędnik rejestrowy | Weryfikator firm w rejestrach |
@@ -86,7 +86,9 @@ Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Taki sam je
 Treść kafelków jest w `narzedzia/data.py`, długie opisy „Rola” źródeł i programów w `narzedzia/roles.py` (powiązania czyta/zapisuje w `narzedzia/gen_html.py`). Po zmianie:
 
 ```bash
-python narzedzia/build_web.py   # odświeża web/index.html
+python narzedzia/build_web.py      # odświeża web/index.html
+python narzedzia/gen_diagramy.py   # DFD poziomu 1 i droga zgłoszenia (narzedzia/diagramy.html)
+node narzedzia/render_img.js       # zapisuje obrazy w docs/img/ (wymaga playwright)
 ```
 
 `narzedzia/gen_layer.py` generował rysunki warstw do dokumentu w Claude Docs (ma w sobie identyfikatory tamtego dokumentu).
