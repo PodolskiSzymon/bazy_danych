@@ -1,0 +1,516 @@
+<title>Mapa warstw Ghost-Job Scanner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Układ: jedna kolumna (max 1120 px). Mapa = sześć pasów warstw; widok warstwy = trzy pasma kafelków; szczegóły w panelu z prawej. */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #16202c;
+  --muted: #586476;
+  --line: #d5dbe4;
+  --person: #1b8655;
+  --system: #3a4f74;
+  --program: #2461c8;
+  --store: #c95c1b;
+  --focus: #2461c8;
+  --shadow: rgba(16, 24, 40, .14);
+  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141b; --surface: #161d26; --ink: #e5eaf1; --muted: #9ca8b8; --line: #2c3644;
+    --person: #4fc48c; --system: #97acd1; --program: #74a4f6; --store: #f08f50; --focus: #74a4f6;
+    --shadow: rgba(0, 0, 0, .55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #161d26; --ink: #e5eaf1; --muted: #9ca8b8; --line: #2c3644;
+  --person: #4fc48c; --system: #97acd1; --program: #74a4f6; --store: #f08f50; --focus: #74a4f6;
+  --shadow: rgba(0, 0, 0, .55);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.page {
+  max-width: 1120px; margin: 0 auto; padding-block: 28px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main:focus, h1:focus { outline: none; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 {
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 3.6vw, 40px);
+  line-height: 1.1; letter-spacing: -0.012em; margin: 6px 0 10px; text-wrap: balance;
+}
+.lede { margin: 0 0 18px; max-width: 65ch; font-size: 16px; }
+.mono { font-family: var(--font-mono); }
+.k-person { --k: var(--person); }
+.k-sys { --k: var(--system); }
+.k-prog, .k-widget { --k: var(--program); }
+.k-store { --k: var(--store); }
+
+/* legenda */
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13.5px; }
+.legend li { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--k); background: color-mix(in srgb, var(--k) 12%, var(--surface)); }
+.sw.k-prog, .sw.k-widget { border-radius: 4px; }
+.sw.k-widget { border-style: dashed; }
+.sw.k-store { border-right-color: transparent; }
+.sw-gate { width: 2px; height: 18px; flex: none; background-image: linear-gradient(to bottom, var(--muted) 55%, transparent 55%); background-size: 2px 6px; }
+
+/* mapa */
+.map { display: grid; margin-top: 24px; }
+.lane {
+  display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1.3fr) 32px minmax(0, 1.15fr);
+  align-items: start; row-gap: 10px; padding: 14px 16px 16px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+  color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s;
+}
+.lane:hover { border-color: var(--program); box-shadow: 0 0 0 3px color-mix(in srgb, var(--program) 16%, transparent); }
+.lane:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.lane-top { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.lane-open { font-size: 13.5px; font-weight: 600; color: var(--program); white-space: nowrap; }
+.ents { display: grid; gap: 8px; min-width: 0; }
+.ent { display: block; padding: 8px 10px; border: 1.5px solid var(--k); background: color-mix(in srgb, var(--k) 8%, var(--surface)); }
+.ent b { display: block; font-weight: 600; }
+.ent > span { display: block; font-size: 13px; color: var(--muted); }
+.gate {
+  align-self: stretch; justify-self: center; width: 2px; opacity: .75;
+  background-image: linear-gradient(to bottom, var(--muted) 55%, transparent 55%); background-size: 2px 7px;
+}
+.dept, .stores { display: block; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--k); background: color-mix(in srgb, var(--k) 8%, var(--surface)); }
+.dept { --k: var(--program); border-radius: 10px; }
+.stores { --k: var(--store); border-right-color: transparent; }
+.dept-title { display: block; font-family: var(--font-display); font-weight: 600; margin-bottom: 4px; }
+.list { display: grid; gap: 1px; font-size: 13.5px; }
+.list.mono { font-size: 13px; overflow-wrap: anywhere; }
+.write { align-self: center; justify-self: center; color: var(--muted); font-size: 18px; }
+.flow { margin: 0; padding: 9px 0 9px 18px; font-size: 13.5px; color: var(--muted); }
+@media (max-width: 760px) {
+  .lane { grid-template-columns: minmax(0, 1fr); }
+  .gate { width: 100%; height: 2px; background-image: linear-gradient(to right, var(--muted) 55%, transparent 55%); background-size: 7px 2px; }
+  .write { transform: rotate(90deg); }
+}
+
+/* widok warstwy */
+.crumbs { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; margin-bottom: 18px; }
+.back { color: var(--program); font-weight: 600; text-decoration: none; }
+.back:hover { text-decoration: underline; }
+.pills { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pills-label { font-size: 13px; color: var(--muted); margin-right: 2px; }
+.pill {
+  min-width: 34px; padding: 4px 10px; text-align: center; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums;
+}
+.pill:hover { border-color: var(--program); }
+.pill[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.band { margin-top: 26px; }
+.band > h2 { margin-bottom: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 12px; }
+.tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px; width: 100%; min-width: 0;
+  padding: 14px 16px; text-align: left; border: 1.5px solid var(--k); border-radius: 0;
+  background: color-mix(in srgb, var(--k) 7%, var(--surface)); color: var(--ink); font: inherit; cursor: pointer;
+  transition: background-color .15s;
+}
+.tile.k-prog, .tile.k-widget { border-radius: 10px; }
+.tile.k-widget { border-style: dashed; }
+.tile.k-store { border-right-color: transparent; }
+.tile:hover { background: color-mix(in srgb, var(--k) 14%, var(--surface)); }
+.tile:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tile-name { font-weight: 600; font-size: 15.5px; overflow-wrap: anywhere; }
+.tile-name.mono { font-weight: 500; font-size: 14.5px; }
+.tile-sub { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.tile-sub.mono { font-size: 12.5px; }
+.tile-teaser { font-size: 13.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tile-more { margin-top: auto; padding-top: 4px; font-size: 13px; font-weight: 600; color: var(--k); }
+.tile-more::after { content: " →"; }
+.band-arrow { margin: 14px 0 0; color: var(--muted); font-size: 13.5px; }
+.note { margin: 24px 0 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; max-width: 80ch; }
+.note + .note { margin-top: 6px; padding-top: 0; border-top: 0; }
+
+/* panel szczegółów */
+html.locked { overflow: hidden; }
+#scrim { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--ink) 30%, transparent); }
+#panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 21; width: min(460px, 100%); overflow-y: auto;
+  background: var(--surface); border-left: 1px solid var(--line); box-shadow: -18px 0 40px var(--shadow);
+  padding: calc(18px + env(safe-area-inset-top, 0px)) calc(22px + env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) 22px;
+  animation: slide .18s ease-out;
+}
+@keyframes slide { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #panel { animation: none; } .lane, .tile { transition: none; } }
+@media (max-width: 520px) { #panel { left: 0; width: 100%; border-left: 0; padding-left: max(18px, env(safe-area-inset-left, 0px)); } }
+.p-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.kind-label { color: var(--k); }
+.close {
+  font: inherit; font-size: 13.5px; font-weight: 600; padding: 6px 12px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.close:hover { border-color: var(--ink); }
+.close:focus-visible, .chip:focus-visible, .ref:focus-visible, .back:focus-visible, .pill:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.p-title { font-family: var(--font-display); font-size: 26px; line-height: 1.15; margin: 14px 0 4px; overflow-wrap: anywhere; text-wrap: balance; }
+.p-title.mono { font-family: var(--font-mono); font-size: 21px; font-weight: 500; }
+.p-sub { margin: 0 0 18px; color: var(--muted); overflow-wrap: anywhere; }
+.p-sub.mono { font-size: 13.5px; }
+.fields { margin: 0; display: grid; gap: 2px; padding: 14px 16px; border: 1.5px solid var(--k); background: color-mix(in srgb, var(--k) 6%, var(--surface)); }
+.fields.k-prog, .fields.k-widget { border-radius: 10px; }
+.fields.k-widget { border-style: dashed; }
+.fields.k-store { border-right-color: transparent; }
+.fields dt { margin-top: 10px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--k); }
+.fields dt:first-child { margin-top: 0; }
+.fields dd { margin: 0; }
+.rels { display: grid; gap: 14px; margin-top: 20px; }
+.rel { display: grid; gap: 6px; min-width: 0; }
+.rel-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.rel-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rel-empty { color: var(--muted); font-size: 13.5px; }
+.chip, .ref {
+  font: inherit; font-size: 13px; line-height: 1.35; color: var(--ink); border: 1px solid var(--k);
+  background: color-mix(in srgb, var(--k) 9%, var(--surface)); cursor: pointer;
+}
+.chip { padding: 4px 9px; border-radius: 999px; }
+.ref { padding: 0 5px; border-radius: 4px; }
+.chip.k-store, .ref.k-store { font-family: var(--font-mono); font-size: 12.5px; }
+.chip:hover, .ref:hover { background: color-mix(in srgb, var(--k) 18%, var(--surface)); }
+.is-static { cursor: help; border-style: dotted; }
+.sql { display: block; overflow-x: auto; white-space: pre; padding: 8px 10px; font-family: var(--font-mono); font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); }
+.hint { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+/* mapa SVG (cała struktura) */
+.svgwrap { margin-top: 22px; overflow-x: auto; }
+.svgmap { display: block; width: 100%; min-width: 640px; height: auto; font-family: var(--font-body); }
+.mini { margin: 0 0 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 10px 14px; }
+.mini summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.mini-wrap { margin-top: 8px; max-width: 620px; }
+.mini-wrap .svgmap { min-width: 0; }
+.mlane { cursor: pointer; outline: none; }
+.mlane.dim { opacity: .38; }
+.mlane.dim:hover, .mlane.dim:focus-visible { opacity: .8; }
+.lane-bg { fill: none; pointer-events: all; stroke: var(--line); stroke-width: 1; }
+.mlane:hover .lane-bg, .mlane:focus-visible .lane-bg { stroke: var(--program); stroke-width: 2.5; }
+.mlane.current .lane-bg { stroke: var(--program); stroke-width: 2.5; fill: color-mix(in srgb, var(--program) 6%, transparent); }
+.box { fill: color-mix(in srgb, var(--k) 9%, var(--surface)); stroke: var(--k); stroke-width: 1.25; }
+.store-fill { fill: color-mix(in srgb, var(--k) 9%, var(--surface)); }
+.store-edge { fill: none; stroke: var(--k); stroke-width: 1.25; }
+.conn { fill: none; stroke: var(--muted); stroke-width: 1.25; }
+.m-head { fill: var(--muted); }
+.gate-line { stroke: var(--muted); stroke-width: 1.25; stroke-dasharray: 4 4; }
+.t-name { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.t-line { fill: var(--ink); font-size: 11.5px; }
+.t-mono { font-family: var(--font-mono); font-size: 11px; }
+.t-dim { fill: var(--muted); font-size: 11.5px; }
+.t-label { fill: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+.t-open { fill: var(--program); font-size: 12px; font-weight: 600; }
+.t-gate { fill: var(--ink); font-size: 11.5px; font-weight: 600; }
+.mini .t-open { display: none; }
+</style>
+
+<div class="page">
+  <main id="app"></main>
+</div>
+<div id="scrim" hidden></div>
+<aside id="panel" role="dialog" aria-modal="true" aria-labelledby="p-title" hidden>
+  <div id="panel-body"></div>
+</aside>
+
+<script type="application/json" id="gjs-data">__DATA__</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById('gjs-data').textContent);
+  const KIND_LABEL = {
+    person: 'Osoba', sys: 'System spoza nas', prog: 'Nasz program',
+    widget: 'Nasz kod w przeglądarce', store: 'Zbiór danych'
+  };
+  const app = document.getElementById('app');
+  const panel = document.getElementById('panel');
+  const panelBody = document.getElementById('panel-body');
+  const scrim = document.getElementById('scrim');
+  const current = { view: 'map', layer: null };
+  let lastFocus = null;
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const uniq = a => [...new Set(a)];
+
+  // Indeksy: kafelek po kluczu, zbiór po nazwie tabeli, właściciele i czytelnicy zbiorów.
+  const items = new Map();
+  DATA.layers.forEach(L => ['sources', 'programs', 'stores'].forEach(g => L[g].forEach(it => items.set(it.key, { it, L }))));
+  const storeKey = new Map();
+  DATA.layers.forEach(L => L.stores.forEach(s => storeKey.set(s.name.replace(' (widok)', ''), s.key)));
+  Object.entries(DATA.alias).forEach(([name, key]) => storeKey.set(name, key));
+  const writers = new Map(), readers = new Map();
+  const add = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+  DATA.layers.forEach(L => L.programs.forEach(p => {
+    p.writes.forEach(d => add(writers, storeKey.get(d) || d, p.key));
+    p.reads.forEach(d => add(readers, storeKey.get(d) || d, p.key));
+  }));
+
+  const names = [...storeKey.keys(), ...Object.keys(DATA.aux)].sort((a, b) => b.length - a.length);
+  const nameRe = new RegExp('\\b(' + names.join('|') + ')\\b', 'g');
+
+  function datasetChip(name, inline) {
+    const cls = inline ? 'ref' : 'chip';
+    const key = storeKey.get(name);
+    if (key && items.has(key)) {
+      return `<button type="button" class="${cls} k-store" data-open="${esc(key)}">${esc(name)}</button>`;
+    }
+    const tip = DATA.aux[name] ? `zbiór pomocniczy: ${DATA.aux[name]}` : 'zbiór pomocniczy';
+    return `<span class="${cls} k-store is-static" title="${esc(tip)}">${esc(name)}</span>`;
+  }
+  function programChip(key) {
+    const rec = items.get(key);
+    return `<button type="button" class="chip k-prog" data-open="${esc(key)}">${esc(rec.it.name)}</button>`;
+  }
+  function linkify(text) {
+    let out = '', last = 0;
+    text.replace(nameRe, (m, _g, idx) => {
+      out += esc(text.slice(last, idx)) + datasetChip(m, true);
+      last = idx + m.length;
+      return m;
+    });
+    return out + esc(text.slice(last));
+  }
+
+  function legend(opts) {
+    const rows = [['person', 'osoba'], ['sys', 'system spoza nas'], ['prog', 'nasz program'], ['store', 'zbiór danych (przyszła tabela SQL)']];
+    if (opts.widget) rows.push(['widget', 'nasz kod w przeglądarce kandydata']);
+    let html = rows.map(([k, l]) => `<li><span class="sw k-${k}"></span>${esc(l)}</li>`).join('');
+    if (opts.gate) html += '<li><span class="sw-gate"></span>Brama API – każde zapytanie z zewnątrz przechodzi przez Portiera</li>';
+    return `<ul class="legend">${html}</ul>`;
+  }
+
+  // Kierunek strzałek źródło ↔ dział (in: do działu, out: do osoby, both: pytanie i odpowiedź).
+  const DIRS = { 1: ['in', 'both'], 2: ['in', 'both'], 3: ['both', 'in', 'both'], 4: ['both', 'in'], 5: ['out', 'both', 'both'], 6: ['in'] };
+
+  function mapSvg(hl) {
+    const ex = 24, ew = 176, gx = 224, px = 248, pw = 256, sx = 536, sw = 200;
+    const cx = px + pw / 2, scx = sx + sw / 2;
+    let y = 74;
+    const lanes = DATA.layers.map(L => {
+      const h = Math.max(L.mapSources.length * 56 - 8, 40 + 16 * L.programs.length, 40 + 16 * L.stores.length);
+      const lane = { L, top: y, h };
+      y += h + 64;
+      return lane;
+    });
+    const H = y - 64 + 24;
+    const gateEnd = lanes[4].top + lanes[4].h + 4;
+    let out = `<svg class="svgmap" viewBox="0 0 760 ${H}" role="img" aria-label="Cała struktura: sześć warstw systemu">
+      <defs><marker id="m-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="m-head"/></marker></defs>
+      <text x="${gx}" y="44" text-anchor="middle" class="t-gate">Brama API</text>
+      <line x1="${gx}" y1="52" x2="${gx}" y2="${gateEnd}" class="gate-line"/>`;
+    lanes.forEach(({ L, top, h }, i) => {
+      const dim = hl && hl !== L.id ? ' dim' : '';
+      const cur = hl === L.id ? ' current' : '';
+      let g = `<g class="mlane${dim}${cur}" data-nav="warstwa-${L.id}" tabindex="0" role="link" aria-label="Otwórz warstwę ${L.id}: ${esc(L.name)}">
+        <rect class="lane-bg" x="12" y="${top - 26}" width="736" height="${h + 36}" rx="12"/>
+        <text x="${ex}" y="${top - 9}" class="t-label">WARSTWA ${L.id}</text>
+        <text x="736" y="${top - 9}" text-anchor="end" class="t-open">${hl === L.id ? 'jesteś tutaj' : 'Otwórz warstwę →'}</text>`;
+      L.mapSources.forEach((s, j) => {
+        const ey = top + j * 56, cy = ey + 24, d = (DIRS[L.id] || [])[j] || 'in';
+        g += `<rect class="box k-${s.kind}" x="${ex}" y="${ey}" width="${ew}" height="48"/>
+          <text x="${ex + 12}" y="${ey + 20}" class="t-name">${esc(s.name)}</text>
+          <text x="${ex + 12}" y="${ey + 36}" class="t-dim">${esc(s.detail)}</text>`;
+        g += d === 'out'
+          ? `<path class="conn" d="M${px} ${cy}H${ex + ew}" marker-end="url(#m-arrow)"/>`
+          : `<path class="conn" d="M${ex + ew} ${cy}H${px}" marker-end="url(#m-arrow)"${d === 'both' ? ' marker-start="url(#m-arrow)"' : ''}/>`;
+      });
+      g += `<rect class="box k-prog" x="${px}" y="${top}" width="${pw}" height="${h}" rx="8"/>
+        <text x="${px + 16}" y="${top + 24}" class="t-name">${esc(L.mapTitle)}</text>`;
+      L.programs.forEach((p, k) => { g += `<text x="${px + 16}" y="${top + 44 + 16 * k}" class="t-line">${esc(p.name)}</text>`; });
+      g += `<rect class="store-fill k-store" x="${sx}" y="${top}" width="${sw}" height="${h}"/>
+        <path class="store-edge k-store" d="M${sx + sw} ${top}H${sx}V${top + h}H${sx + sw}"/>
+        <text x="${sx + 16}" y="${top + 24}" class="t-name">${esc(L.storeGroup)}</text>`;
+      L.stores.forEach((z, k) => { g += `<text x="${sx + 16}" y="${top + 44 + 16 * k}" class="t-line t-mono">${esc(z.name)}</text>`; });
+      g += `<path class="conn" d="M${px + pw} ${top + h / 2}H${sx}" marker-end="url(#m-arrow)"/></g>`;
+      out += g;
+      const next = lanes[i + 1];
+      if (next && i < 4) {
+        const b = top + h;
+        out += `<path class="conn" d="M${scx} ${b}V${b + 26}H${cx}V${next.top}" marker-end="url(#m-arrow)"/>
+          <text x="${scx - 10}" y="${b + 21}" text-anchor="end" class="t-dim">${esc(L.flowNext)}</text>`;
+      } else if (next) {
+        out += `<text x="${ex}" y="${top + h + 28}" class="t-dim">${esc(L.flowNext)}</text>`;
+      }
+    });
+    return out + '</svg>';
+  }
+
+  function renderMap() {
+    app.innerHTML = `
+      <header>
+        <p class="eyebrow">Projekt bazy danych · osoby, programy i zbiory</p>
+        <h1 id="view-title" tabindex="-1">Ghost-Job Scanner w sześciu warstwach</h1>
+        <p class="lede">Każda warstwa zapisuje tylko własne zbiory, a cudze jedynie czyta. Kliknij warstwę, żeby zobaczyć jej kafelki i to, co robi każdy z nich.</p>
+        ${legend({ gate: true })}
+      </header>
+      <div class="svgwrap">${mapSvg(null)}</div>`;
+  }
+
+  function tile(it) {
+    const [lab, txt] = it.fields[0];
+    return `<button type="button" class="tile k-${it.kind}" data-open="${esc(it.key)}" aria-haspopup="dialog">
+      <span class="tile-name${it.kind === 'store' ? ' mono' : ''}">${esc(it.name)}</span>
+      <span class="tile-sub${it.kind === 'prog' ? ' mono' : ''}">${esc(it.sub)}</span>
+      <span class="tile-teaser"><b>${esc(lab)}</b> ${esc(txt)}</span>
+      <span class="tile-more">Szczegóły</span>
+    </button>`;
+  }
+
+  function renderLayer(L) {
+    const pills = DATA.layers.map(x =>
+      `<a class="pill" href="#warstwa-${x.id}" data-nav="warstwa-${x.id}"${x.id === L.id ? ' aria-current="page"' : ''}>${x.id}</a>`).join('');
+    const band = (title, list) =>
+      `<section class="band"><h2 class="eyebrow">${esc(title)}</h2><div class="grid">${list.map(tile).join('')}</div></section>`;
+    app.innerHTML = `
+      <nav class="crumbs" aria-label="Nawigacja po warstwach">
+        <a class="back" href="#struktura" data-nav="struktura">← Cała struktura</a>
+        <span class="pills"><span class="pills-label">Warstwy:</span>${pills}</span>
+      </nav>
+      <details class="mini" open>
+        <summary>Cała struktura – zaznaczona warstwa ${L.id}</summary>
+        <div class="svgwrap mini-wrap">${mapSvg(L.id)}</div>
+      </details>
+      <header>
+        <p class="eyebrow">Warstwa ${L.id}</p>
+        <h1 id="view-title" tabindex="-1">${esc(L.name)}</h1>
+        <p class="lede">${esc(cap(L.finding))}.</p>
+        ${legend({ widget: L.sources.some(s => s.kind === 'widget') })}
+      </header>
+      ${band(L.band1, L.sources)}
+      <p class="band-arrow">↓ ${esc(L.arrow1)}</p>
+      ${band('Programy warstwy – nasi „pracownicy”', L.programs)}
+      <p class="band-arrow">↓ programy zapisują wyniki w zbiorach</p>
+      ${band('Zbiory, które warstwa zapisuje (przyszłe tabele)', L.stores)}
+      <p class="note">${linkify(L.note)}</p>
+      <p class="note">${linkify(L.link)}</p>`;
+  }
+
+  const relRow = (label, html, empty) =>
+    `<div class="rel"><span class="rel-label">${esc(label)}</span><span class="rel-chips">${html || `<span class="rel-empty">${esc(empty || '—')}</span>`}</span></div>`;
+  const sqlRow = s => `<div class="rel"><span class="rel-label">W SQL</span><code class="sql">${esc(s)}</code></div>`;
+
+  function openDetail(key, opener) {
+    const rec = items.get(key);
+    if (!rec) return;
+    const { it, L } = rec;
+    let rels = '';
+    if (it.kind === 'prog') {
+      rels += relRow('Czyta', it.reads.map(d => datasetChip(d)).join(''), 'nic – dostaje zlecenia albo odpowiedzi innych programów');
+      rels += relRow('Zapisuje', it.writes.map(d => datasetChip(d)).join(''), 'nic – wynik oddaje innemu programowi');
+      rels += '<p class="hint">W bazie ten program loguje się jak osobny pracownik: ma własne konto i prawo zapisu tylko do swoich zbiorów.</p>';
+    } else if (it.kind === 'store') {
+      const table = it.name.replace(' (widok)', '');
+      if (it.viewOf) {
+        rels += relRow('Liczony na żywo z', it.viewOf.map(d => datasetChip(d)).join(''));
+        rels += sqlRow(`CREATE VIEW ${table} AS SELECT …`);
+      } else {
+        rels += relRow('Zapisuje (właściciel)', uniq(writers.get(it.key) || []).map(programChip).join(''), it.sharedWrite);
+        rels += sqlRow(it.tables ? it.tables.map(t => `CREATE TABLE ${t} (…);`).join('\n') : `CREATE TABLE ${table} (…);`);
+      }
+      rels += relRow('Czytają', uniq(readers.get(it.key) || []).map(programChip).join(''), 'żaden program z tej mapy');
+    } else {
+      rels += relRow('Rozmawia z programami', (it.talks || []).map(programChip).join(''));
+    }
+    panelBody.innerHTML = `
+      <div class="p-head">
+        <p class="eyebrow kind-label k-${it.kind}">${esc(KIND_LABEL[it.kind])} · warstwa ${L.id}</p>
+        <button type="button" class="close" data-close>Zamknij</button>
+      </div>
+      <h2 id="p-title" class="p-title${it.kind === 'store' ? ' mono' : ''}">${esc(it.name)}</h2>
+      <p class="p-sub${it.kind === 'prog' ? ' mono' : ''}">${esc(it.sub)}</p>
+      <dl class="fields k-${it.kind}">${it.fields.map(([lab, txt]) => `<dt>${esc(lab.replace(/:$/, ''))}</dt><dd>${linkify(txt)}</dd>`).join('')}</dl>
+      <div class="rels">${rels}</div>`;
+    if (panel.hidden) lastFocus = opener || document.activeElement;
+    panel.hidden = false;
+    scrim.hidden = false;
+    document.documentElement.classList.add('locked');
+    panel.scrollTop = 0;
+    panelBody.querySelector('.close').focus();
+  }
+
+  function closeDetail() {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    scrim.hidden = true;
+    document.documentElement.classList.remove('locked');
+    if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+    lastFocus = null;
+  }
+
+  function parse(token) {
+    const m = /^warstwa-(\d)(?:--([a-z0-9_-]+))?$/.exec(token || '');
+    const L = m && DATA.layers.find(x => x.id === Number(m[1]));
+    if (L) return { view: 'layer', L, detail: m[2] && items.has(m[2]) ? m[2] : null };
+    return { view: 'map' };
+  }
+
+  function show(state, initial) {
+    closeDetail();
+    if (state.view === 'layer') {
+      renderLayer(state.L);
+      current.view = 'layer';
+      current.layer = state.L.id;
+    } else {
+      renderMap();
+      current.view = 'map';
+      current.layer = null;
+    }
+    if (!initial) {
+      window.scrollTo(0, 0);
+      const h = document.getElementById('view-title');
+      if (h) h.focus({ preventScroll: true });
+    }
+    if (state.detail) openDetail(state.detail, null);
+  }
+
+  function navigate(token) {
+    let viaHash = false;
+    try {
+      if (location.hash.slice(1) !== token) {
+        location.hash = token;
+        viaHash = location.hash.slice(1) === token;
+      }
+    } catch (e) { viaHash = false; }
+    if (!viaHash) show(parse(token));
+  }
+
+  window.addEventListener('hashchange', () => show(parse(location.hash.slice(1))));
+
+  document.addEventListener('click', e => {
+    const nav = e.target.closest('[data-nav]');
+    if (nav) { e.preventDefault(); navigate(nav.dataset.nav); return; }
+    const op = e.target.closest('[data-open]');
+    if (op) {
+      const rec = items.get(op.dataset.open);
+      if (!rec) return;
+      if (current.view === 'layer' && current.layer === rec.L.id) openDetail(rec.it.key, panel.contains(op) ? null : op);
+      else navigate(`warstwa-${rec.L.id}--${rec.it.key}`);
+      return;
+    }
+    if (e.target.closest('[data-close]') || e.target === scrim) closeDetail();
+  });
+
+  document.addEventListener('keydown', e => {
+    const lane = e.target.closest && e.target.closest('.mlane');
+    if (lane && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigate(lane.dataset.nav); return; }
+    if (panel.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeDetail(); return; }
+    if (e.key === 'Tab') {
+      const f = [...panel.querySelectorAll('button, [href]')];
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  show(parse(location.hash.slice(1)), true);
+})();
+</script>
