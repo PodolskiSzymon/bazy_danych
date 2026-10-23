@@ -29,6 +29,50 @@ Etap obecny: **projekt na papierze, przed SQL** – wszystkie osoby (w tym progr
 | 5 | Biuro Obsługi – kontakt z kandydatem, firmą, moderatorem, IOD | [warstwa-5.png](docs/img/warstwa-5.png) |
 | 6 | Zaplecze – parametry, czas, koszty AI, audyt | [warstwa-6.png](docs/img/warstwa-6.png) |
 
+## Nazwy programów
+
+Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Obrazy w `docs/img/` pochodzą sprzed zmiany i mają jeszcze dawne nazwy – poniżej ich odpowiedniki.
+
+| Dawna nazwa (na obrazach) | Obecna nazwa |
+|---|---|
+| Rejestrator kont firm | Importer kont firm |
+| Urzędnik rejestrowy | Weryfikator firm w rejestrach |
+| Porządkowy | Łączyciel kont z platform |
+| Przyjmujący ogłoszenia | Importer ogłoszeń |
+| Redaktor | Czyściciel treści ogłoszeń |
+| Analityk wymagań | Ekstraktor wymagań z ogłoszeń |
+| Wektoryzator | Wektoryzator ogłoszeń |
+| Detektyw podobieństw | Wyszukiwacz podobnych ogłoszeń |
+| Kronikarz | Grupowacz ogłoszeń w rodziny |
+| Kancelaria | Przyjmowacz zgłoszeń kandydatów |
+| Bramkarz | Odsiewacz botów |
+| Rejestrator aplikacji | Importer logu aplikacji |
+| Sprawdzacz aplikacji | Weryfikator złożenia aplikacji |
+| Daktyloskop | Porównywacz odcisków urządzeń |
+| Analityk nadużyć | Wykrywacz kampanii zgłoszeń |
+| Kierownik zgłoszeń | Oceniacz wiarygodności zgłoszeń |
+| Sekretarka | Wysyłacz przypomnień |
+| Notariusz zgód | Rejestrator zgód kandydatów |
+| Statystyk | Wyliczacz sygnałów o firmach |
+| Sędzia | Wystawiacz Trust Score |
+| Asystent śledczy | Kompletowacz teczek spraw |
+| Rzecznik | Publikator Trust Score |
+| Bibliotekarz | Zbieracz danych treningowych |
+| Trener | Trener modelu |
+| Informator | Wyświetlacz odznak zaufania |
+| Okienko dla firm | Przyjmowacz odwołań firm |
+| Biurko moderatora | Zapisywacz decyzji moderatora |
+| Urzędnik RODO | Realizator wniosków RODO |
+| Rzecznik prasowy | Generator raportów publicznych |
+| Portier (Brama API) | Kontroler kluczy API (Brama API) |
+| Biuro administratora | Edytor ustawień systemu |
+| Zegar | Uruchamiacz zadań cyklicznych |
+| Strażnik | Obserwator stanu systemu |
+| Łącznik z AI | Pośrednik zapytań do AI |
+| Protokolant | Zapisywacz dziennika audytu |
+| Sprzątacz | Usuwacz przeterminowanych danych |
+| Archiwista | Twórca kopii zapasowych |
+
 ## Najważniejsze zasady
 
 1. Program = osoba = konto w bazie z uprawnieniami.

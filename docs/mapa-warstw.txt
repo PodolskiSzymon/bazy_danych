@@ -5,7 +5,7 @@ Jak czytać:
   Przy poprawkach piszcie identyfikator, np. „W3-Z4: dodać pole X”.
 - Ź = źródło (osoba albo system spoza nas), P = nasz program, Z = zbiór danych (przyszła tabela SQL).
 - Zasada: do każdego zbioru pisze dokładnie jeden program (właściciel), reszta tylko czyta.
-- Wszystko z zewnątrz przechodzi przez Bramę API (W6-P1 Portier).
+- Wszystko z zewnątrz przechodzi przez Bramę API (W6-P1 Kontroler kluczy API).
 
 POPRAWKI OD PROWADZĄCEGO (dopisujcie tutaj):
 - [ ] ...
@@ -22,25 +22,25 @@ Powiązania: Zbiory tej warstwy czyta warstwa 2, żeby przypisać każde ogłosz
     pracuj.pl, OLX – serwisy, które wpięły nasz kod
     Bierzemy: konto firmy – nazwę, id konta, NIP, stronę www
     Jak: ich serwer wysyła dane do naszego API (przez Bramę)
-    Rozmawia z: Rejestrator kont firm
+    Rozmawia z: Importer kont firm
 
 [W1-Ź2] Rejestry publiczne  (SYSTEM ZEWNĘTRZNY)
     państwowe bazy firm: KRS, VAT, CEIDG, REGON
     Bierzemy: nazwę urzędową, status firmy, datę rejestracji i rodzaj działalności (PKD)
     Jak: pytamy po numerze NIP, KRS albo REGON; wynik zapisujemy z datą
-    Rozmawia z: Urzędnik rejestrowy
+    Rozmawia z: Weryfikator firm w rejestrach
 
 --- PROGRAMY ---
 
-[W1-P1] Rejestrator kont firm  (PROGRAM)
+[W1-P1] Importer kont firm  (PROGRAM)
     import_employer_account.py
     Działa: odbiera konto firmy przysłane przez platformę
     Analizuje: czy dane są kompletne i w dobrym formacie
-    Oddaje: wpis w employer_accounts i zlecenie dla Urzędnika
+    Oddaje: wpis w employer_accounts i zlecenie dla Weryfikatora firm w rejestrach
     Czyta: partners
     Zapisuje: employer_accounts
 
-[W1-P2] Urzędnik rejestrowy  (PROGRAM)
+[W1-P2] Weryfikator firm w rejestrach  (PROGRAM)
     verify_company_registry.py
     Działa: sprawdza sumę kontrolną NIP i pyta rejestry o firmę; co jakiś czas sprawdza ponownie
     Analizuje: czy firma istnieje, czy działa, od kiedy i czym się zajmuje
@@ -48,7 +48,7 @@ Powiązania: Zbiory tej warstwy czyta warstwa 2, żeby przypisać każde ogłosz
     Czyta: employer_accounts, system_parameters
     Zapisuje: registry_snapshots
 
-[W1-P3] Porządkowy  (PROGRAM)
+[W1-P3] Łączyciel kont z platform  (PROGRAM)
     resolve_employer_identity.py
     Działa: łączy konta z różnych platform w jednego pracodawcę
     Analizuje: NIP, a bez NIP nazwę i stronę www; rozpoznaje agencje rekrutacyjne
@@ -61,7 +61,7 @@ Powiązania: Zbiory tej warstwy czyta warstwa 2, żeby przypisać każde ogłosz
 [W1-Z1] employer_accounts  (ZBIÓR)
     konta firm na platformach
     Przechowuje: platformę, id konta, nazwę, NIP (jeśli podany), stronę www
-    Po co: z tego Porządkowy ustala, kto naprawdę stoi za kontem – jedna firma może mieć wiele kont
+    Po co: z tego Łączyciel kont z platform ustala, kto naprawdę stoi za kontem – jedna firma może mieć wiele kont
 
 [W1-Z2] registry_snapshots  (ZBIÓR)
     odpisy z rejestrów publicznych
@@ -83,7 +83,7 @@ Uwaga: Pomocnicze zbiory tej warstwy: employer_merge_log (historia scaleń) i le
 ======================================================================
 WARSTWA 2 – DZIAŁ OGŁOSZEŃ
 Sedno: każde ogłoszenie porównujemy z poprzednimi ogłoszeniami tej firmy.
-Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę – Kancelaria z warstwy 3.
+Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę – Przyjmowacz zgłoszeń kandydatów z warstwy 3.
 ======================================================================
 
 --- ŹRÓDŁA ---
@@ -92,17 +92,17 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     pracuj.pl, OLX
     Bierzemy: treść ogłoszenia i jego zdarzenia: publikację, edycję, odświeżenie, wygaśnięcie, zamknięcie
     Jak: ich serwer wysyła je do naszego API; każda platforma ma swój format
-    Rozmawia z: Przyjmujący ogłoszenia
+    Rozmawia z: Importer ogłoszeń
 
 [W2-Ź2] Model AI  (SYSTEM ZEWNĘTRZNY)
     zewnętrzny model językowy i model wektorów
     Bierzemy: wymagania wyciągnięte z tekstu i wektory znaczenia (liczby opisujące sens)
-    Jak: zawsze przez Łącznika z AI z warstwy 6, który pamięta odpowiedzi
-    Rozmawia z: Łącznik z AI, Analityk wymagań, Wektoryzator
+    Jak: zawsze przez Pośrednika zapytań do AI z warstwy 6, który pamięta odpowiedzi
+    Rozmawia z: Pośrednik zapytań do AI, Ekstraktor wymagań z ogłoszeń, Wektoryzator ogłoszeń
 
 --- PROGRAMY ---
 
-[W2-P1] Przyjmujący ogłoszenia  (PROGRAM)
+[W2-P1] Importer ogłoszeń  (PROGRAM)
     import_job_posting.py + adaptery platform
     Działa: odbiera ogłoszenie; adapter danej platformy tłumaczy jej format na nasz wspólny
     Analizuje: czy to nowe ogłoszenie, czy zmiana już znanego
@@ -110,7 +110,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     Czyta: partners
     Zapisuje: raw_postings, job_postings, posting_events
 
-[W2-P2] Redaktor  (PROGRAM)
+[W2-P2] Czyściciel treści ogłoszeń  (PROGRAM)
     clean_posting_text.py
     Działa: usuwa HTML, stopki „O nas” i klauzule RODO
     Analizuje: akapity, które firma powtarza w każdym ogłoszeniu; czy prosi o zgodę na przyszłe rekrutacje
@@ -118,7 +118,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     Czyta: job_postings, boilerplate_patterns, employer_boilerplate
     Zapisuje: posting_texts_clean, employer_boilerplate
 
-[W2-P3] Analityk wymagań  (PROGRAM)
+[W2-P3] Ekstraktor wymagań z ogłoszeń  (PROGRAM)
     extract_posting_features.py
     Działa: najpierw reguły (np. widełki „8000–10000 zł”), potem AI dla reszty
     Analizuje: poziom, wymagania, obowiązki, widełki, rodzaj umowy, pracę zdalną
@@ -126,7 +126,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     Czyta: posting_texts_clean, seniority_dictionary, skills_dictionary
     Zapisuje: posting_features
 
-[W2-P4] Wektoryzator  (PROGRAM)
+[W2-P4] Wektoryzator ogłoszeń  (PROGRAM)
     embed_posting.py
     Działa: zamienia tekst na wektor – listę liczb opisującą sens, a nie dokładne słowa
     Analizuje: znaczenie całego ogłoszenia
@@ -134,7 +134,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     Czyta: posting_texts_clean
     Zapisuje: posting_vectors
 
-[W2-P5] Detektyw podobieństw  (PROGRAM)
+[W2-P5] Wyszukiwacz podobnych ogłoszeń  (PROGRAM)
     find_similar_postings.py
     Działa: porównuje ogłoszenie z poprzednimi ogłoszeniami tej samej firmy
     Analizuje: kopię, parafrazę, ten sam etat jako Senior i Mid, duplikat na innej platformie
@@ -142,7 +142,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     Czyta: posting_vectors, posting_features, job_postings, employer_account_links, system_parameters
     Zapisuje: similar_posting_pairs
 
-[W2-P6] Kronikarz  (PROGRAM)
+[W2-P6] Grupowacz ogłoszeń w rodziny  (PROGRAM)
     build_posting_families.py
     Działa: łączy podobne ogłoszenia w rodziny – to samo stanowisko w czasie
     Analizuje: ile razy wracało, jak długo wisiało, przerwy, odświeżenia, warianty poziomu
@@ -196,38 +196,38 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
     osoba szukająca pracy na pracuj.pl lub OLX
     Daje: zgłoszenie wyniku rekrutacji (cisza, odmowa, rozmowa, zatrudnienie) i zgody
     Znamy: tylko pseudonim od platformy – nie imię, e-mail ani CV
-    Rozmawia z: Kancelaria, Notariusz zgód
+    Rozmawia z: Przyjmowacz zgłoszeń kandydatów, Rejestrator zgód kandydatów
 
 [W3-Ź2] Widżet – nasz kod u partnera  (NASZ KOD W PRZEGLĄDARCE)
     działa w przeglądarce kandydata, nie u nas
     Co to: małe okienko na stronie pracuj.pl/OLX, np. przycisk „Zgłoś wynik rekrutacji”
     Pliki: report_form.js (formularz), device_signals.js (cechy urządzenia), consent_prompt.js (zgody)
     Uwaga: każdy może go podrobić, dlatego wszystko, co przyśle, sprawdzamy
-    Rozmawia z: Kancelaria, Notariusz zgód, Daktyloskop
+    Rozmawia z: Przyjmowacz zgłoszeń kandydatów, Rejestrator zgód kandydatów, Porównywacz odcisków urządzeń
 
 [W3-Ź3] Platformy  (SYSTEM ZEWNĘTRZNY)
     pracuj.pl, OLX
     Bierzemy: log aplikacji – kto (pseudonim) aplikował na którą ofertę i kiedy
     Po co: najmocniejszy dowód, że zgłaszający naprawdę aplikował
-    Rozmawia z: Rejestrator aplikacji, Sekretarka
+    Rozmawia z: Importer logu aplikacji, Wysyłacz przypomnień
 
 [W3-Ź4] Cloudflare Turnstile  (SYSTEM ZEWNĘTRZNY)
     usługa odróżniająca ludzi od botów
     Bierzemy: odpowiedź tak/nie dla tokenu z przeglądarki; token żyje 300 s i działa raz
     Nie dostaje: żadnych danych o karcie graficznej ani urządzeniu
-    Rozmawia z: Bramkarz
+    Rozmawia z: Odsiewacz botów
 
 --- PROGRAMY ---
 
-[W3-P1] Kancelaria  (PROGRAM)
+[W3-P1] Przyjmowacz zgłoszeń kandydatów  (PROGRAM)
     receive_report.py
     Działa: przyjmuje zgłoszenie z widżetu i od razu je zapisuje – nic nie ginie
     Analizuje: format i to, czy oferta istnieje
-    Oddaje: reports oraz zlecenie oceny dla Kierownika
+    Oddaje: reports oraz zlecenie oceny dla Oceniacza wiarygodności zgłoszeń
     Czyta: job_postings
     Zapisuje: reports
 
-[W3-P2] Bramkarz  (PROGRAM)
+[W3-P2] Odsiewacz botów  (PROGRAM)
     verify_turnstile.py
     Działa: pyta Cloudflare, czy token z formularza jest ważny
     Analizuje: tylko odpowiedź tak/nie i kody błędów
@@ -235,7 +235,7 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
     Czyta: —
     Zapisuje: bot_checks
 
-[W3-P3] Rejestrator aplikacji  (PROGRAM)
+[W3-P3] Importer logu aplikacji  (PROGRAM)
     import_application_events.py
     Działa: odbiera od platformy informację, że pseudonim X aplikował na ofertę Y
     Analizuje: format; statusy z systemu rekrutacji platformy, jeśli je udostępnia
@@ -243,15 +243,15 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
     Czyta: partners
     Zapisuje: application_log
 
-[W3-P4] Sprawdzacz aplikacji  (PROGRAM)
+[W3-P4] Weryfikator złożenia aplikacji  (PROGRAM)
     check_application_proof.py
-    Działa: na prośbę Kierownika szuka aplikacji zgłaszającego
+    Działa: na prośbę Oceniacza wiarygodności zgłoszeń szuka aplikacji zgłaszającego
     Analizuje: czy naprawdę aplikował i czy minęło dość dni, żeby mówić o ciszy
-    Oddaje: opinię dla Kierownika; sam nic nie zapisuje
+    Oddaje: opinię dla Oceniacza wiarygodności zgłoszeń; sam nic nie zapisuje
     Czyta: application_log, system_parameters
     Zapisuje: —
 
-[W3-P5] Daktyloskop  (PROGRAM)
+[W3-P5] Porównywacz odcisków urządzeń  (PROGRAM)
     check_this_fingerprint.py
     Działa: z cech urządzenia liczy skrót (hasz); surowych cech nie zapisuje
     Analizuje: ile kont i zgłoszeń ma to samo urządzenie
@@ -259,7 +259,7 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
     Czyta: consents
     Zapisuje: device_fingerprints
 
-[W3-P6] Analityk nadużyć  (PROGRAM)
+[W3-P6] Wykrywacz kampanii zgłoszeń  (PROGRAM)
     detect_report_campaigns.py
     Działa: regularnie przegląda wszystkie świeże zgłoszenia
     Analizuje: fale zgłoszeń na jedną firmę z nowych kont i tych samych urządzeń, np. atak konkurencji
@@ -267,15 +267,15 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
     Czyta: reports, device_fingerprints, bot_checks, application_log, api_access_log
     Zapisuje: abuse_alerts
 
-[W3-P7] Kierownik zgłoszeń  (PROGRAM)
+[W3-P7] Oceniacz wiarygodności zgłoszeń  (PROGRAM)
     check_is_user_complaint_reliable.py
-    Działa: zbiera wynik Bramkarza i opinie Sprawdzacza, Daktyloskopa i Analityka nadużyć
+    Działa: zbiera wynik Odsiewacza botów i opinie Weryfikatora złożenia aplikacji, Porównywacza odcisków urządzeń i Wykrywacza kampanii zgłoszeń
     Analizuje: łączy wszystkie opinie w jedną wagę 0–1
     Oddaje: decyzję: przyjęte, do moderacji albo odrzucone – z powodami (report_verdicts)
     Czyta: reports, bot_checks, device_fingerprints, abuse_alerts, moderator_decisions, system_parameters
     Zapisuje: report_verdicts
 
-[W3-P8] Sekretarka  (PROGRAM)
+[W3-P8] Wysyłacz przypomnień  (PROGRAM)
     remind_candidates.py
     Działa: po ustalonej liczbie dni od aplikacji prosi platformę, żeby zapytała kandydata o wynik
     Analizuje: komu wolno przypomnieć (zgoda) i komu już przypomniano
@@ -283,7 +283,7 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
     Czyta: application_log, consents, system_parameters
     Zapisuje: reminders_sent
 
-[W3-P9] Notariusz zgód  (PROGRAM)
+[W3-P9] Rejestrator zgód kandydatów  (PROGRAM)
     record_consent.py
     Działa: zapisuje zgodę albo jej wycofanie
     Analizuje: na co jest zgoda (przypomnienia, cechy urządzenia) i w jakiej wersji treści
@@ -301,7 +301,7 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
 [W3-Z2] reports  (ZBIÓR)
     zgłoszenia kandydatów
     Przechowuje: wynik (cisza, odmowa, zatrudnienie…), daty, skrót urządzenia; tylko dopisujemy
-    Po co: surowy głos kandydatów – liczy się dopiero po ocenie Kierownika
+    Po co: surowy głos kandydatów – liczy się dopiero po ocenie Oceniacza wiarygodności zgłoszeń
 
 [W3-Z3] device_fingerprints  (ZBIÓR)
     odciski urządzeń
@@ -338,16 +338,16 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     zewnętrzny model językowy
     Bierzemy: teczki spraw – streszczenie dowodów dla moderatora: oś czasu, liczby
     Nie robi: sam nie wystawia wyniku i niczego nie publikuje
-    Rozmawia z: Łącznik z AI, Asystent śledczy
+    Rozmawia z: Pośrednik zapytań do AI, Kompletowacz teczek spraw
 
 [W4-Ź2] Personel  (OSOBA)
     nasi ludzie: administrator i moderatorzy
     Dają: wagi i progi Trust Score oraz etykiety – decyzje, z których uczy się model
-    Rozmawia z: Biuro administratora, Biurko moderatora
+    Rozmawia z: Edytor ustawień systemu, Zapisywacz decyzji moderatora
 
 --- PROGRAMY ---
 
-[W4-P1] Statystyk  (PROGRAM)
+[W4-P1] Wyliczacz sygnałów o firmach  (PROGRAM)
     compute_employer_signals.py
     Działa: regularnie liczy liczby opisujące każdą firmę
     Analizuje: odsetek powtórek, ciszę i zatrudnienia na 100 aplikacji, widełki, flagi z rejestru, wyniki odwołań
@@ -355,7 +355,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     Czyta: posting_lifecycles, posting_families, posting_features, validated_reports, application_log, registry_snapshots, employers, moderator_decisions
     Zapisuje: employer_signals
 
-[W4-P2] Sędzia  (PROGRAM)
+[W4-P2] Wystawiacz Trust Score  (PROGRAM)
     compute_trust_score.py
     Działa: z sygnałów liczy wynik 0–100: na start wagi od zespołu, później model
     Analizuje: ile danych stoi za wynikiem – to jego pewność
@@ -363,7 +363,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     Czyta: employer_signals, system_parameters, model_registry
     Zapisuje: trust_score_history
 
-[W4-P3] Asystent śledczy  (PROGRAM)
+[W4-P3] Kompletowacz teczek spraw  (PROGRAM)
     llm_case_analyst.py
     Działa: dla spraw granicznych i odwołań prosi AI o streszczenie
     Analizuje: oś czasu ogłoszeń, podobieństwa, liczby zgłoszeń
@@ -371,7 +371,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     Czyta: posting_families, similar_posting_pairs, employer_signals, report_verdicts, appeals
     Zapisuje: case_files
 
-[W4-P4] Rzecznik  (PROGRAM)
+[W4-P4] Publikator Trust Score  (PROGRAM)
     publish_trust_score.py
     Działa: decyduje, co zobaczy kandydat
     Analizuje: mała pewność → „za mało danych”; spadek do ostrzeżenia → najpierw moderator
@@ -379,7 +379,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     Czyta: trust_score_history, moderator_decisions, system_parameters
     Zapisuje: published_trust_scores
 
-[W4-P5] Bibliotekarz  (PROGRAM)
+[W4-P5] Zbieracz danych treningowych  (PROGRAM)
     build_training_dataset.py
     Działa: składa materiał do nauki modelu
     Analizuje: sygnały firm i decyzje moderatorów jako poprawne odpowiedzi (etykiety)
@@ -387,7 +387,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     Czyta: employer_signals, posting_lifecycles, moderator_decisions
     Zapisuje: training_datasets
 
-[W4-P6] Trener  (PROGRAM)
+[W4-P6] Trener modelu  (PROGRAM)
     train_and_evaluate_model.py
     Działa: uczy model i sprawdza go na danych, których wcześniej nie widział
     Analizuje: czy nowy model jest lepszy od reguł
@@ -400,7 +400,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
 [W4-Z1] employer_signals  (ZBIÓR)
     sygnały pracodawców
     Przechowuje: dla każdej firmy na każdy dzień wszystkie składowe oceny
-    Po co: wejście dla Sędziego, historia zmian i materiał do nauki modelu
+    Po co: wejście dla Wystawiacza Trust Score, historia zmian i materiał do nauki modelu
 
 [W4-Z2] trust_score_history  (ZBIÓR)
     historia Trust Score
@@ -441,36 +441,36 @@ Powiązania: Decyzje moderatorów wracają do warstw 3 i 4, które oceniają spr
     osoba szukająca pracy
     Dostaje: odznakę przy ofercie: wynik, pewność, 2–3 powody albo „za mało danych”
     Jak: przez widżet trust_badge.js na stronie platformy
-    Rozmawia z: Informator, Urzędnik RODO
+    Rozmawia z: Wyświetlacz odznak zaufania, Realizator wniosków RODO
 
 [W5-Ź2] Pracodawca  (OSOBA)
     firma oceniana przez system (też agencja)
     Dostaje: swój wynik i powody
     Daje: odwołania, np. „stanowisko obsadzone”
     Jak: loguje się przez platformę i potwierdza NIP
-    Rozmawia z: Okienko dla firm
+    Rozmawia z: Przyjmowacz odwołań firm
 
 [W5-Ź3] Moderator  (OSOBA)
     nasz pracownik
     Robi: rozstrzyga sprawy sporne i zatwierdza ostrzeżenia
-    Rozmawia z: Biurko moderatora
+    Rozmawia z: Zapisywacz decyzji moderatora
 
 [W5-Ź4] IOD – Inspektor Ochrony Danych  (OSOBA)
     osoba odpowiedzialna za RODO
     Robi: pilnuje wniosków kandydatów, terminów przechowywania i audytu
-    Rozmawia z: Urzędnik RODO
+    Rozmawia z: Realizator wniosków RODO
 
 --- PROGRAMY ---
 
-[W5-P1] Informator  (PROGRAM)
+[W5-P1] Wyświetlacz odznak zaufania  (PROGRAM)
     serve_trust_badge.py
-    Działa: gdy kandydat otwiera ofertę, widżet pyta Informatora o odznakę
+    Działa: gdy kandydat otwiera ofertę, widżet pyta Wyświetlacza odznak zaufania o odznakę
     Analizuje: oferta → firma → opublikowany wynik oraz fakty, np. „publikowane 6. raz”
     Oddaje: odznakę i dzienne liczniki wyświetleń (bez danych osób)
     Czyta: job_postings, employer_account_links, published_trust_scores, posting_lifecycles
     Zapisuje: badge_view_stats
 
-[W5-P2] Okienko dla firm  (PROGRAM)
+[W5-P2] Przyjmowacz odwołań firm  (PROGRAM)
     employer_panel
     Działa: strona dla firm: wynik, powody i rodziny ogłoszeń
     Analizuje: przyjmuje odwołania, np. „stanowisko obsadzone” albo „to nie nasze ogłoszenie”
@@ -478,7 +478,7 @@ Powiązania: Decyzje moderatorów wracają do warstw 3 i 4, które oceniają spr
     Czyta: published_trust_scores, employer_signals, posting_families, employers, moderator_decisions
     Zapisuje: appeals
 
-[W5-P3] Biurko moderatora  (PROGRAM)
+[W5-P3] Zapisywacz decyzji moderatora  (PROGRAM)
     moderation_panel
     Działa: pokazuje moderatorowi kolejkę spraw razem z teczkami
     Analizuje: człowiek ogląda dowody i decyduje
@@ -486,7 +486,7 @@ Powiązania: Decyzje moderatorów wracają do warstw 3 i 4, które oceniają spr
     Czyta: moderation_queue, case_files, reports, similar_posting_pairs, appeals
     Zapisuje: moderator_decisions
 
-[W5-P4] Urzędnik RODO  (PROGRAM)
+[W5-P4] Realizator wniosków RODO  (PROGRAM)
     handle_privacy_request.py
     Działa: przyjmuje wnioski kandydatów (wgląd, usunięcie, sprzeciw) przekazane przez platformę
     Analizuje: które zbiory mają dane tego pseudonimu
@@ -494,7 +494,7 @@ Powiązania: Decyzje moderatorów wracają do warstw 3 i 4, które oceniają spr
     Czyta: consents
     Zapisuje: privacy_requests
 
-[W5-P5] Rzecznik prasowy  (PROGRAM)
+[W5-P5] Generator raportów publicznych  (PROGRAM)
     public_reports.py
     Działa: regularnie robi zestawienia rynku pracy
     Analizuje: tylko liczby zbiorcze, nigdy pojedyncze osoby
@@ -535,7 +535,7 @@ Uwaga: Pomocniczy zbiór: badge_view_stats (ile razy dziennie pokazano odznakę 
 ======================================================================
 WARSTWA 6 – ZAPLECZE
 Sedno: zaplecze pilnuje porządku – zasad, czasu, kosztów i śladów.
-Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejścia do każdej z nich.
+Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Kontroler kluczy API pilnuje wejścia do każdej z nich.
 ======================================================================
 
 --- ŹRÓDŁA ---
@@ -543,11 +543,11 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
 [W6-Ź1] Administrator  (OSOBA)
     nasz pracownik techniczny
     Daje: parametry (progi, wagi, terminy), słowniki, klucze partnerów, konta personelu
-    Rozmawia z: Biuro administratora
+    Rozmawia z: Edytor ustawień systemu
 
 --- PROGRAMY ---
 
-[W6-P1] Portier (Brama API)  (PROGRAM)
+[W6-P1] Kontroler kluczy API (Brama API)  (PROGRAM)
     api_gateway – przerywana linia na mapie
     Działa: każde zapytanie z zewnątrz przechodzi najpierw przez niego
     Analizuje: klucz API partnera, domenę widżetu i liczbę zapytań (limity)
@@ -555,7 +555,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: partners, api_keys
     Zapisuje: api_access_log
 
-[W6-P2] Biuro administratora  (PROGRAM)
+[W6-P2] Edytor ustawień systemu  (PROGRAM)
     admin_panel
     Działa: strona, w której administrator zmienia ustawienia systemu
     Analizuje: kto zmienia – każda zmiana trafia do audytu
@@ -563,7 +563,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: job_runs, system_alerts, llm_usage_log, audit_log
     Zapisuje: system_parameters, partners, api_keys, staff_accounts, boilerplate_patterns, legal_form_dictionary, seniority_dictionary, skills_dictionary
 
-[W6-P3] Zegar  (PROGRAM)
+[W6-P3] Uruchamiacz zadań cyklicznych  (PROGRAM)
     scheduler
     Działa: budzi programy o ustalonych porach, jak budzik, np. przeliczenie Trust Score
     Analizuje: harmonogram zapisany w system_parameters
@@ -571,7 +571,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: system_parameters
     Zapisuje: job_runs
 
-[W6-P4] Strażnik  (PROGRAM)
+[W6-P4] Obserwator stanu systemu  (PROGRAM)
     monitoring
     Działa: pilnuje, czy wszystkie programy działają
     Analizuje: błędy w job_runs, długość kolejki zleceń, nietypowy ruch w API
@@ -579,7 +579,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: job_runs, task_queue, api_access_log
     Zapisuje: system_alerts
 
-[W6-P5] Łącznik z AI  (PROGRAM)
+[W6-P5] Pośrednik zapytań do AI  (PROGRAM)
     llm_gateway.py
     Działa: jedyne drzwi do modelu AI
     Analizuje: czy ta sama treść była już pytana – wtedy odpowiedź z pamięci, bez opłaty
@@ -587,7 +587,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: llm_cache, system_parameters
     Zapisuje: llm_cache, llm_usage_log
 
-[W6-P6] Protokolant  (PROGRAM)
+[W6-P6] Zapisywacz dziennika audytu  (PROGRAM)
     audit_logger
     Działa: zapisuje każdą ważną czynność ludzi i programów
     Analizuje: kto czytał dane osobowe, kto zmienił wynik, parametr albo decyzję
@@ -595,7 +595,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: —
     Zapisuje: audit_log
 
-[W6-P7] Sprzątacz  (PROGRAM)
+[W6-P7] Usuwacz przeterminowanych danych  (PROGRAM)
     retention_cleaner.py
     Działa: po terminie przechowywania każe właścicielom zbiorów usunąć stare dane
     Analizuje: daty w zbiorach i terminy z parametrów
@@ -603,7 +603,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
     Czyta: system_parameters
     Zapisuje: —
 
-[W6-P8] Archiwista  (PROGRAM)
+[W6-P8] Twórca kopii zapasowych  (PROGRAM)
     backup_job
     Działa: robi szyfrowane kopie zapasowe bazy
     Analizuje: datę wygaśnięcia każdej kopii
@@ -626,7 +626,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
 [W6-Z3] partners  (ZBIÓR)
     partnerzy – podłączone platformy
     Przechowuje: platformę, domeny widżetu, wersję formatu, umowę powierzenia danych
-    Po co: Portier wie, kogo wpuścić, a adapter – jak tłumaczyć dane
+    Po co: Kontroler kluczy API wie, kogo wpuścić, a adapter – jak tłumaczyć dane
 
 [W6-Z4] api_keys  (ZBIÓR)
     klucze API
@@ -651,7 +651,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Portier pilnuje wejś
 [W6-Z8] job_runs  (ZBIÓR)
     dziennik uruchomień
     Przechowuje: start, koniec, liczbę rekordów i błędy każdego uruchomienia
-    Po co: Strażnik widzi, co się zepsuło i kiedy
+    Po co: Obserwator stanu systemu widzi, co się zepsuło i kiedy
 
 [W6-Z9] llm_cache  (ZBIÓR)
     pamięć odpowiedzi AI
