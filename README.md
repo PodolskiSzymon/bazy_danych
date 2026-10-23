@@ -31,7 +31,7 @@ Etap obecny: **projekt na papierze, przed SQL** – wszystkie osoby (w tym progr
 
 ## Nazwy programów
 
-Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Obrazy w `docs/img/` pochodzą sprzed zmiany i mają jeszcze dawne nazwy – poniżej ich odpowiedniki.
+Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Taki sam jest jego klucz w kodzie i w adresie strony, np. `laczyciel-kont`, `trener-ai`, `uruchamiacz-zadan`. Obrazy w `docs/img/` pochodzą sprzed zmiany i mają jeszcze dawne nazwy – poniżej ich odpowiedniki.
 
 | Dawna nazwa (na obrazach) | Obecna nazwa |
 |---|---|
@@ -41,7 +41,7 @@ Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Obrazy w `d
 | Przyjmujący ogłoszenia | Importer ogłoszeń |
 | Redaktor | Czyściciel treści ogłoszeń |
 | Analityk wymagań | Ekstraktor wymagań z ogłoszeń |
-| Wektoryzator | Wektoryzator ogłoszeń |
+| Wektoryzator | Zamieniacz ogłoszeń na wektory |
 | Detektyw podobieństw | Wyszukiwacz podobnych ogłoszeń |
 | Kronikarz | Grupowacz ogłoszeń w rodziny |
 | Kancelaria | Przyjmowacz zgłoszeń kandydatów |
@@ -58,7 +58,7 @@ Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Obrazy w `d
 | Asystent śledczy | Kompletowacz teczek spraw |
 | Rzecznik | Publikator Trust Score |
 | Bibliotekarz | Zbieracz danych treningowych |
-| Trener | Trener modelu |
+| Trener | Trener sztucznej inteligencji |
 | Informator | Wyświetlacz odznak zaufania |
 | Okienko dla firm | Przyjmowacz odwołań firm |
 | Biurko moderatora | Zapisywacz decyzji moderatora |

@@ -106,7 +106,7 @@ Programy w przeglądarce działają na cudzej stronie i cudzym komputerze. Dlate
 | `import_job_posting.py` (Importer ogłoszeń) z adapterami `adapter_pracuj.py`, `adapter_olx.py` (Tłumacze) | przyjmuje ogłoszenie i jego zdarzenia, tłumaczy format platformy na nasz | platforma | `partners` | `raw_postings`, `job_postings`, `posting_events` |
 | `clean_posting_text.py` (Czyściciel treści ogłoszeń) | usuwa HTML, stopki „O nas” i klauzule RODO; notuje, czy ogłoszenie prosi o zgodę na przyszłe rekrutacje | nowe lub zmienione ogłoszenie | `job_postings`, `boilerplate_patterns`, `employer_boilerplate` | `posting_texts_clean`, `employer_boilerplate` |
 | `extract_posting_features.py` (Ekstraktor wymagań z ogłoszeń) | wyciąga poziom, wymagania, obowiązki, widełki i rodzaj umowy – najpierw reguły, potem AI | oczyszczony tekst | `posting_texts_clean`, `seniority_dictionary`, `skills_dictionary` | `posting_features` |
-| `embed_posting.py` (Wektoryzator ogłoszeń) | zamienia tekst na wektor znaczenia (przez Pośrednika zapytań do AI) | oczyszczony tekst | `posting_texts_clean` | `posting_vectors` |
+| `embed_posting.py` (Zamieniacz ogłoszeń na wektory) | zamienia tekst na wektor znaczenia (przez Pośrednika zapytań do AI) | oczyszczony tekst | `posting_texts_clean` | `posting_vectors` |
 | `find_similar_postings.py` (Wyszukiwacz podobnych ogłoszeń) | porównuje z ogłoszeniami tej samej firmy: kopia, parafraza, klon poziomu (Senior/Mid), duplikat na innej platformie | nowe cechy i wektor | `posting_vectors`, `posting_features`, `job_postings`, `employer_account_links`, `system_parameters` | `similar_posting_pairs` |
 | `build_posting_families.py` (Grupowacz ogłoszeń w rodziny) | łączy pary w rodziny (to samo stanowisko w czasie) i liczy cykle życia | nowe pary; Uruchamiacz zadań cyklicznych | `similar_posting_pairs`, `posting_events`, `job_postings` | `posting_families`, `posting_lifecycles` |
 
@@ -133,7 +133,7 @@ Programy w przeglądarce działają na cudzej stronie i cudzym komputerze. Dlate
 | `llm_case_analyst.py` (Kompletowacz teczek spraw) | dla spraw granicznych i odwołań pisze teczkę: oś czasu ogłoszeń, podobieństwa, liczby zgłoszeń | wynik blisko progu; odwołanie | `posting_families`, `similar_posting_pairs`, `employer_signals`, `report_verdicts`, `appeals` | `case_files` |
 | `publish_trust_score.py` (Publikator Trust Score) | decyduje, co zobaczy kandydat: mała pewność → „za mało danych”, spadek do ostrzeżenia → najpierw moderator | nowy wynik; decyzja moderatora | `trust_score_history`, `moderator_decisions`, `system_parameters` | `published_trust_scores` |
 | `build_training_dataset.py` (Zbieracz danych treningowych) | składa zbiór treningowy: sygnały i etykiety z decyzji moderatorów, bez danych osób | analityk danych | `employer_signals`, `posting_lifecycles`, `moderator_decisions` | `training_datasets` |
-| `train_and_evaluate_model.py` (Trener modelu) | uczy model, testuje go na danych, których nie widział, i aktywuje po zatwierdzeniu | analityk danych | `training_datasets` | `model_registry` |
+| `train_and_evaluate_model.py` (Trener sztucznej inteligencji) | uczy model, testuje go na danych, których nie widział, i aktywuje po zatwierdzeniu | analityk danych | `training_datasets` | `model_registry` |
 
 ### 5. Biuro Obsługi
 
@@ -182,7 +182,7 @@ Zbiorów jest 50 i do tego dwa widoki, w siedmiu grupach; cztery pierwsze to fun
 | --- | --- | --- | --- | --- | --- |
 | `raw_postings` | dokładnie to, co przysłała platforma (skompresowany JSON), z wersją formatu | `import_job_posting.py` | ten sam program przy ponownym przetwarzaniu | platformy | ograniczony termin (parametr) |
 | `job_postings` | ogłoszenie w naszym formacie: platforma, id na platformie, konto firmy, tytuł, opis, miejsce, umowa, daty publikacji i wygaśnięcia, stan | `import_job_posting.py` | Czyściciel treści ogłoszeń, Wyszukiwacz podobnych ogłoszeń, Grupowacz ogłoszeń w rodziny, Przyjmowacz zgłoszeń kandydatów, Wyświetlacz odznak zaufania | platformy | stale (to dowód) |
-| `posting_texts_clean` | tekst bez HTML i stopek, skrót treści, wykryte klauzule (np. zgoda na przyszłe rekrutacje) | `clean_posting_text.py` | Ekstraktor wymagań z ogłoszeń, Wektoryzator ogłoszeń | pochodny | stale |
+| `posting_texts_clean` | tekst bez HTML i stopek, skrót treści, wykryte klauzule (np. zgoda na przyszłe rekrutacje) | `clean_posting_text.py` | Ekstraktor wymagań z ogłoszeń, Zamieniacz ogłoszeń na wektory | pochodny | stale |
 | `boilerplate_patterns` | wzorce typowych stopek i klauzul | `admin_panel` | Czyściciel treści ogłoszeń | personel | stale |
 | `employer_boilerplate` | akapity, które dana firma powtarza w każdym ogłoszeniu | `clean_posting_text.py` | Czyściciel treści ogłoszeń | pochodny | stale |
 | `seniority_dictionary` | poziomy (stażysta, junior, mid, senior, lead…) i ich synonimy | `admin_panel` | Ekstraktor wymagań z ogłoszeń | personel | stale |
@@ -223,7 +223,7 @@ Twój zbiór „danych fingerprintingu” to `device_fingerprints`. Trzyma tylko
 | `trust_score_history` | każdy wyliczony wynik: firma, data, wynik 0–100, pewność, powody, wersja modelu; tylko dopisywanie | `compute_trust_score.py` | Publikator Trust Score | pochodny | stale |
 | `published_trust_scores` | to, co widzi kandydat: wynik albo „za mało danych”, od kiedy, stan (opublikowany lub wstrzymany) | `publish_trust_score.py` | Wyświetlacz odznak zaufania, Przyjmowacz odwołań firm, Generator raportów publicznych, widok `moderation_queue` | pochodny | stale |
 | `case_files` | teczka sprawy dla moderatora | `llm_case_analyst.py` | Zapisywacz decyzji moderatora | pochodny (+AI) | do zamknięcia sprawy |
-| `training_datasets` | wersjonowany zbiór: sygnały i etykiety, bez danych osób | `build_training_dataset.py` | Trener modelu | pochodny | kolejne wersje |
+| `training_datasets` | wersjonowany zbiór: sygnały i etykiety, bez danych osób | `build_training_dataset.py` | Trener sztucznej inteligencji | pochodny | kolejne wersje |
 | `model_registry` | wersja modelu, zbiór treningowy, wynik testu, stan (aktywny, wycofany), kto zatwierdził | `train_and_evaluate_model.py` | Wystawiacz Trust Score | pochodny + analityk | stale |
 | `llm_cache` | odpowiedź AI zapisana pod skrótem treści i wersją polecenia | `llm_gateway.py` | Pośrednik zapytań do AI | dostawca AI | do zmiany modelu |
 | `llm_usage_log` | liczba wywołań, tokeny, koszt | `llm_gateway.py` | Edytor ustawień systemu | pochodny | stale |

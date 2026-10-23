@@ -146,7 +146,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     zewnętrzny model językowy i model wektorów
     Bierzemy: wymagania wyciągnięte z tekstu i wektory znaczenia (liczby opisujące sens)
     Jak: zawsze przez Pośrednika zapytań do AI z warstwy 6, który pamięta odpowiedzi
-    Rozmawia z: Pośrednik zapytań do AI, Ekstraktor wymagań z ogłoszeń, Wektoryzator ogłoszeń
+    Rozmawia z: Pośrednik zapytań do AI, Ekstraktor wymagań z ogłoszeń, Zamieniacz ogłoszeń na wektory
 
 --- PROGRAMY ---
 
@@ -174,7 +174,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
     Czyta: posting_texts_clean, seniority_dictionary, skills_dictionary
     Zapisuje: posting_features
 
-[W2-P4] Wektoryzator ogłoszeń  (PROGRAM)
+[W2-P4] Zamieniacz ogłoszeń na wektory  (PROGRAM)
     embed_posting.py
     Działa: zamienia tekst na wektor – listę liczb opisującą sens, a nie dokładne słowa
     Analizuje: znaczenie całego ogłoszenia
@@ -435,7 +435,7 @@ Powiązania: Kandydat i firma widzą wyłącznie published_trust_scores – prze
     Czyta: employer_signals, posting_lifecycles, moderator_decisions
     Zapisuje: training_datasets
 
-[W4-P6] Trener modelu  (PROGRAM)
+[W4-P6] Trener sztucznej inteligencji  (PROGRAM)
     train_and_evaluate_model.py
     Działa: uczy model i sprawdza go na danych, których wcześniej nie widział
     Analizuje: czy nowy model jest lepszy od reguł
