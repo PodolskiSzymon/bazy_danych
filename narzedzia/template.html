@@ -166,6 +166,12 @@ html.locked { overflow: hidden; }
 .fields dt { margin-top: 10px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--k); }
 .fields dt:first-child { margin-top: 0; }
 .fields dd { margin: 0; }
+.role { margin-top: 20px; padding: 16px 18px; border: 1px solid var(--line); border-left: 4px solid var(--k); border-radius: 0 12px 12px 0; background: var(--surface); }
+.role h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 20px; }
+.role h4 { margin: 14px 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--k); }
+.role p { margin: 0; line-height: 1.55; }
+.role ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; line-height: 1.5; }
+.role .role-lead { font-size: 15.5px; }
 .rels { display: grid; gap: 14px; margin-top: 20px; }
 .rel { display: grid; gap: 6px; min-width: 0; }
 .rel-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -418,6 +424,18 @@ html.locked { overflow: hidden; }
     } else {
       rels += relRow('Rozmawia z programami', (it.talks || []).map(programChip).join(''));
     }
+    const r = it.role;
+    const role = !r ? '' : `
+      <section class="role k-${it.kind}" aria-labelledby="role-h">
+        <h3 id="role-h">Rola</h3>
+        <p class="role-lead">${linkify(r.kim)}</p>
+        <h4>Co ma na celu – zadania tej roli</h4>
+        <ol>${r.zadania.map(z => `<li>${linkify(z)}</li>`).join('')}</ol>
+        <h4>Z jakich zbiorów korzysta</h4><p>${linkify(r.korzysta)}</p>
+        <h4>Do jakich zbiorów zapisuje</h4><p>${linkify(r.zapisuje)}</p>
+        <h4>Kogo uruchamia i kto uruchamia jego</h4><p>${linkify(r.uruchamia)}</p>
+        ${r.skroty ? `<h4>Skróty i trudne słowa</h4><p>${linkify(r.skroty)}</p>` : ''}
+      </section>`;
     panelBody.innerHTML = `
       <div class="p-head">
         <p class="eyebrow kind-label k-${it.kind}">${esc(KIND_LABEL[it.kind])} · warstwa ${L.id}</p>
@@ -425,7 +443,7 @@ html.locked { overflow: hidden; }
       </div>
       <h2 id="p-title" class="p-title${it.kind === 'store' ? ' mono' : ''}">${esc(it.name)}</h2>
       <p class="p-sub${it.kind === 'prog' ? ' mono' : ''}">${esc(it.sub)}</p>
-      <dl class="fields k-${it.kind}">${it.fields.map(([lab, txt]) => `<dt>${esc(lab.replace(/:$/, ''))}</dt><dd>${linkify(txt)}</dd>`).join('')}</dl>
+      <dl class="fields k-${it.kind}">${it.fields.map(([lab, txt]) => `<dt>${esc(lab.replace(/:$/, ''))}</dt><dd>${linkify(txt)}</dd>`).join('')}</dl>${role}
       <div class="rels">${rels}</div>`;
     if (panel.hidden) lastFocus = opener || document.activeElement;
     panel.hidden = false;

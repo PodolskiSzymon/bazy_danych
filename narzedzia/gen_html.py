@@ -7,6 +7,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from data import LAYERS  # noqa: E402
+from roles import ROLES  # noqa: E402
 
 # Krótkie opisy źródeł na mapie (te same co na rysunku całej struktury).
 MAP_SOURCES = {
@@ -176,12 +177,14 @@ def build_data():
         }
         for s in L["sources"]:
             lay["sources"].append({"key": s["key"], "kind": s["kind"], "name": s["name"], "sub": s["sub"],
-                                   "fields": [list(f) for f in s["fields"]], "talks": TALKS[s["key"]]})
+                                   "fields": [list(f) for f in s["fields"]], "talks": TALKS[s["key"]],
+                                   "role": ROLES[s["key"]]})
         for p in L["programs"]:
             prog_keys.add(p["key"])
             lay["programs"].append({"key": p["key"], "kind": "prog", "name": p["name"], "sub": p["sub"],
                                     "fields": [list(f) for f in p["fields"]],
-                                    "reads": READS[p["key"]], "writes": WRITES[p["key"]]})
+                                    "reads": READS[p["key"]], "writes": WRITES[p["key"]],
+                                    "role": ROLES[p["key"]]})
         for z in L["stores"]:
             store_keys.add(z["key"])
             item = {"key": z["key"], "kind": "store", "name": z["name"], "sub": z["sub"],
@@ -199,6 +202,9 @@ def build_data():
     written = {ALIAS.get(d, d) for ds in WRITES.values() for d in ds}
     for k in store_keys:
         assert k in written or k in VIEW_OF or k in SHARED_WRITE, k
+    # Każde źródło i każdy program ma opisaną rolę (roles.py).
+    role_keys = prog_keys | {s["key"] for L in layers for s in L["sources"]}
+    assert role_keys == set(ROLES), role_keys ^ set(ROLES)
     known = store_keys | set(AUX) | set(ALIAS)
     for ds in list(READS.values()) + list(WRITES.values()):
         for d in ds:

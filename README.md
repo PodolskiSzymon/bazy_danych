@@ -39,7 +39,7 @@ Etap obecny: **projekt na papierze, przed SQL** – wszystkie osoby (w tym progr
 
 ## Jak zmieniać treść
 
-Treść kafelków jest w `narzedzia/data.py` (powiązania czyta/zapisuje w `narzedzia/gen_html.py`). Po zmianie:
+Treść kafelków jest w `narzedzia/data.py`, długie opisy „Rola” źródeł i programów w `narzedzia/roles.py` (powiązania czyta/zapisuje w `narzedzia/gen_html.py`). Po zmianie:
 
 ```bash
 python narzedzia/build_web.py   # odświeża web/index.html
