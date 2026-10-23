@@ -150,7 +150,7 @@ Programy w przeglądarce działają na cudzej stronie i cudzym komputerze. Dlate
 | Program (rola) | Zadanie | Kto uruchamia | Czyta | Zapisuje |
 | --- | --- | --- | --- | --- |
 | `admin_panel` (Edytor ustawień systemu) | zarządza platformami, kluczami, kontami personelu, parametrami i słownikami | administrator | `job_runs`, `system_alerts`, `llm_usage_log`, `audit_log` | `partners`, `api_keys`, `staff_accounts`, `system_parameters`, `boilerplate_patterns`, `legal_form_dictionary`, `seniority_dictionary`, `skills_dictionary` |
-| `llm_gateway.py` (Pośrednik zapytań do AI) | jedyne drzwi do modelu AI: ta sama treść = odpowiedź z pamięci bez drugiej opłaty; liczy koszty | programy działów 2 i 4 | `llm_cache`, `system_parameters` | `llm_cache`, `llm_usage_log` |
+| `llm_gateway.py` (Pośrednik zapytań do AI) | jedyny program łączący się z modelem AI: ta sama treść = odpowiedź z pamięci bez drugiej opłaty; liczy koszty | programy działów 2 i 4 | `llm_cache`, `system_parameters` | `llm_cache`, `llm_usage_log` |
 | `scheduler` (Uruchamiacz zadań cyklicznych) | budzi programy według harmonogramu | upływ czasu | `system_parameters` | `job_runs` |
 | `audit_logger` (Zapisywacz dziennika audytu) | zapisuje, kto odczytał dane osobowe i kto zmienił wynik, parametr albo decyzję | każdy program i panel | – | `audit_log` |
 | `retention_cleaner.py` (Usuwacz przeterminowanych danych) | po upływie terminu przechowywania wysyła właścicielom zlecenia usunięcia | Uruchamiacz zadań cyklicznych | `system_parameters`, daty w zbiorach | – (usuwają właściciele) |

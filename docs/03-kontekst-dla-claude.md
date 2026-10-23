@@ -152,7 +152,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
 
 [W2-P1] Importer ogłoszeń  (PROGRAM)
     import_job_posting.py + adaptery platform
-    Działa: odbiera ogłoszenie; adapter danej platformy tłumaczy jej format na nasz wspólny
+    Działa: odbiera ogłoszenie; adapter danej platformy przepisuje jej format na nasz wspólny
     Analizuje: czy to nowe ogłoszenie, czy zmiana już znanego
     Oddaje: job_postings, posting_events i surową kopię raw_postings
     Czyta: partners
@@ -193,7 +193,7 @@ Powiązania: Rodziny i cykle życia ogłoszeń czyta warstwa 4, a samą ofertę 
 [W2-P6] Grupowacz ogłoszeń w rodziny  (PROGRAM)
     build_posting_families.py
     Działa: łączy podobne ogłoszenia w rodziny – to samo stanowisko w czasie
-    Analizuje: ile razy wracało, jak długo wisiało, przerwy, odświeżenia, warianty poziomu
+    Analizuje: ile razy ogłoszenie wracało, ile dni było widoczne, przerwy, odświeżenia, warianty poziomu
     Oddaje: posting_families i posting_lifecycles
     Czyta: similar_posting_pairs, posting_events, job_postings
     Zapisuje: posting_families, posting_lifecycles
@@ -248,7 +248,7 @@ Powiązania: Do Trust Score w warstwie 4 trafiają tylko zgłoszenia z widoku va
 
 [W3-Ź2] Widżet – nasz kod u partnera  (NASZ KOD W PRZEGLĄDARCE)
     działa w przeglądarce kandydata, nie u nas
-    Co to: małe okienko na stronie pracuj.pl/OLX, np. przycisk „Zgłoś wynik rekrutacji”
+    Co to: nasz kod JavaScript na stronie pracuj.pl/OLX, np. przycisk „Zgłoś wynik rekrutacji” i formularz
     Pliki: report_form.js (formularz), device_signals.js (cechy urządzenia), consent_prompt.js (zgody)
     Uwaga: każdy może go podrobić, dlatego wszystko, co przyśle, sprawdzamy
     Rozmawia z: Przyjmowacz zgłoszeń kandydatów, Rejestrator zgód kandydatów, Porównywacz odcisków urządzeń
@@ -613,7 +613,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Kontroler kluczy API 
 
 [W6-P3] Uruchamiacz zadań cyklicznych  (PROGRAM)
     scheduler
-    Działa: budzi programy o ustalonych porach, jak budzik, np. przeliczenie Trust Score
+    Działa: uruchamia programy o ustalonych porach, np. przeliczenie Trust Score co noc
     Analizuje: harmonogram zapisany w system_parameters
     Oddaje: job_runs – co, kiedy i z jakim skutkiem się uruchomiło
     Czyta: system_parameters
@@ -629,7 +629,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Kontroler kluczy API 
 
 [W6-P5] Pośrednik zapytań do AI  (PROGRAM)
     llm_gateway.py
-    Działa: jedyne drzwi do modelu AI
+    Działa: jedyny program, który łączy się z modelem AI; inne programy pytają przez niego
     Analizuje: czy ta sama treść była już pytana – wtedy odpowiedź z pamięci, bez opłaty
     Oddaje: llm_cache i licznik kosztów AI
     Czyta: llm_cache, system_parameters
@@ -674,7 +674,7 @@ Powiązania: Zbiory zaplecza czytają wszystkie warstwy, a Kontroler kluczy API 
 [W6-Z3] partners  (ZBIÓR)
     partnerzy – podłączone platformy
     Przechowuje: platformę, domeny widżetu, wersję formatu, umowę powierzenia danych
-    Po co: Kontroler kluczy API wie, kogo wpuścić, a adapter – jak tłumaczyć dane
+    Po co: Kontroler kluczy API wie, kogo wpuścić, a Importer ogłoszeń – którego adaptera użyć
 
 [W6-Z4] api_keys  (ZBIÓR)
     klucze API
