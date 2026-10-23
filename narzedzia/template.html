@@ -288,7 +288,7 @@ html.locked { overflow: hidden; }
     const rows = [['person', 'osoba'], ['sys', 'system spoza nas'], ['prog', 'nasz program'], ['store', 'zbiór danych (przyszła tabela SQL)']];
     if (opts.widget) rows.push(['widget', 'nasz kod w przeglądarce kandydata']);
     let html = rows.map(([k, l]) => `<li><span class="sw k-${k}"></span>${esc(l)}</li>`).join('');
-    if (opts.gate) html += '<li><span class="sw-gate"></span>Brama API – każde zapytanie z zewnątrz przechodzi przez Portiera</li>';
+    if (opts.gate) html += '<li><span class="sw-gate"></span>Brama API – każde zapytanie z zewnątrz przechodzi przez Kontrolera kluczy API</li>';
     return `<ul class="legend">${html}</ul>`;
   }
 

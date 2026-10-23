@@ -11,9 +11,9 @@ ROLES = {
             "Przesyłać te dane w umówionym formacie i zawsze z kluczem API, po którym rozpoznajemy, że to naprawdę ten partner.",
             "Dzięki temu kandydat ani firma nie muszą wpisywać tych samych danych drugi raz u nas.",
         ],
-        "korzysta": "Platforma nie korzysta z naszych zbiorów w tej warstwie – tylko nam coś daje. Najpierw jej zapytanie sprawdza Portier (Brama API), który porównuje klucz z listą w api_keys i partners.",
-        "zapisuje": "To, co przyśle, trafia do zbioru employer_accounts (konta firm na platformach). Zapisuje je nasz program Rejestrator kont firm, a nie sama platforma – platforma nie ma bezpośredniego dostępu do naszej bazy.",
-        "uruchamia": "Każde przysłane konto budzi Rejestratora kont firm, a ten zleca dalszą pracę Urzędnikowi rejestrowemu.",
+        "korzysta": "Platforma nie korzysta z naszych zbiorów w tej warstwie – tylko nam coś daje. Najpierw jej zapytanie sprawdza Kontroler kluczy API (Brama API), który porównuje klucz z listą w api_keys i partners.",
+        "zapisuje": "To, co przyśle, trafia do zbioru employer_accounts (konta firm na platformach). Zapisuje je nasz program Importer kont firm, a nie sama platforma – platforma nie ma bezpośredniego dostępu do naszej bazy.",
+        "uruchamia": "Każde przysłane konto budzi Importera kont firm, a ten zleca dalszą pracę Weryfikatorowi firm w rejestrach.",
         "skroty": "API – „okienko” w programie, przez które inne programy mogą wysyłać i odbierać dane. NIP – numer identyfikacji podatkowej firmy, jak PESEL, tylko dla firm.",
     },
     "rejestry": {
@@ -24,38 +24,38 @@ ROLES = {
             "Dzięki temu wykrywamy fałszywe „firmy”, które zbierają CV, choć wcale nie istnieją albo już nie działają.",
         ],
         "korzysta": "Rejestry nie korzystają z naszych danych. Dostają od nas tylko numer firmy, o którą pytamy.",
-        "zapisuje": "Odpowiedź rejestru zapisuje nasz Urzędnik rejestrowy w zbiorze registry_snapshots (odpisy z rejestrów) razem z datą sprawdzenia. Dzięki temu nie musimy pytać rejestru przy każdym ogłoszeniu – rejestry mają dzienne limity zapytań.",
-        "uruchamia": "Rejestry niczego u nas nie uruchamiają – to my do nich dzwonimy. Pyta zawsze Urzędnik rejestrowy.",
+        "zapisuje": "Odpowiedź rejestru zapisuje nasz Weryfikator firm w rejestrach w zbiorze registry_snapshots (odpisy z rejestrów) razem z datą sprawdzenia. Dzięki temu nie musimy pytać rejestru przy każdym ogłoszeniu – rejestry mają dzienne limity zapytań.",
+        "uruchamia": "Rejestry niczego u nas nie uruchamiają – to my do nich dzwonimy. Pyta zawsze Weryfikator firm w rejestrach.",
         "skroty": "KRS – Krajowy Rejestr Sądowy (spółki, np. sp. z o.o.). CEIDG – rejestr jednoosobowych działalności gospodarczych. REGON – rejestr GUS z numerem statystycznym firmy. VAT (Biała lista) – wykaz podatników VAT prowadzony przez Ministerstwo Finansów. PKD – kod opisujący, czym firma się zajmuje.",
     },
-    "rejestrator-kont": {
-        "kim": "Rejestrator kont firm jest jak pracownik biura podawczego, który przyjmuje teczki z danymi nowych klientów, sprawdza, czy niczego w nich nie brakuje, i odkłada je do właściwej szafy. Nie ocenia firmy – tylko porządnie przyjmuje dane.",
+    "importer-kont": {
+        "kim": "Importer kont firm jest jak pracownik biura podawczego, który przyjmuje teczki z danymi nowych klientów, sprawdza, czy niczego w nich nie brakuje, i odkłada je do właściwej szafy. Nie ocenia firmy – tylko porządnie przyjmuje dane.",
         "zadania": [
             "Odebrać od platformy dane konta firmy (nazwa, numer konta w serwisie, NIP, strona www).",
             "Sprawdzić, czy dane są kompletne i mają dobry format, np. czy NIP ma 10 cyfr.",
             "Zapisać konto w zbiorze employer_accounts – jako nowe albo jako zmianę istniejącego.",
-            "Zostawić zlecenie dla Urzędnika rejestrowego: „sprawdź tę firmę w rejestrach”.",
+            "Zostawić zlecenie dla Weryfikatora firm w rejestrach: „sprawdź tę firmę w rejestrach”.",
         ],
         "korzysta": "Czyta zbiór partners (lista podłączonych platform), żeby wiedzieć, w jakim formacie dana platforma przysyła dane.",
         "zapisuje": "Jest jedynym właścicielem zbioru employer_accounts (konta firm na platformach). Żaden inny program nie może tam pisać.",
-        "uruchamia": "Uruchamia go platforma, gdy przysyła konto. On sam uruchamia Urzędnika rejestrowego, wrzucając zlecenie do task_queue (kolejki zleceń między programami).",
+        "uruchamia": "Uruchamia go platforma, gdy przysyła konto. On sam uruchamia Weryfikatora firm w rejestrach, wrzucając zlecenie do task_queue (kolejki zleceń między programami).",
         "skroty": "task_queue – „skrzynka na zlecenia”: program zostawia tam kartkę dla innego programu, żeby praca nie zginęła, nawet gdy tamten akurat nie działa.",
     },
-    "urzednik": {
-        "kim": "Urzędnik rejestrowy to pracownik, który dzwoni do urzędów i sprawdza, czy firma jest prawdziwa. Jak urzędnik w banku, który przed udzieleniem kredytu sprawdza firmę w KRS.",
+    "weryfikator-firm": {
+        "kim": "Weryfikator firm w rejestrach to pracownik, który dzwoni do urzędów i sprawdza, czy firma jest prawdziwa. Jak urzędnik w banku, który przed udzieleniem kredytu sprawdza firmę w KRS.",
         "zadania": [
             "Sprawdzić sumę kontrolną NIP – czy numer w ogóle może być prawdziwy (to da się policzyć bez pytania urzędu).",
             "Zapytać rejestry publiczne o firmę: czy istnieje, czy działa, od kiedy i czym się zajmuje.",
             "Zapisać odpowiedź z datą, żeby nie pytać ponownie przy każdym ogłoszeniu.",
-            "Co jakiś czas (gdy obudzi go Zegar) sprawdzić znane firmy ponownie, bo firma mogła np. zostać wykreślona.",
+            "Co jakiś czas (gdy obudzi go Uruchamiacz zadań cyklicznych) sprawdzić znane firmy ponownie, bo firma mogła np. zostać wykreślona.",
         ],
         "korzysta": "Czyta employer_accounts (konta firm na platformach), żeby wiedzieć, kogo sprawdzić, oraz system_parameters (parametry systemu), gdzie zapisano, jak często powtarzać sprawdzenia.",
         "zapisuje": "Jest właścicielem zbioru registry_snapshots (odpisy z rejestrów publicznych).",
-        "uruchamia": "Uruchamiają go Rejestrator kont firm (nowe konto) i Zegar (ponowne sprawdzenia). Po zapisaniu odpisu zostawia zlecenie dla Porządkowego.",
+        "uruchamia": "Uruchamiają go Importer kont firm (nowe konto) i Uruchamiacz zadań cyklicznych (ponowne sprawdzenia). Po zapisaniu odpisu zostawia zlecenie dla Łączyciela kont z platform.",
         "skroty": "Suma kontrolna – ostatnia cyfra NIP wynika z poprzednich, więc łatwo wykryć literówkę albo zmyślony numer.",
     },
-    "porzadkowy": {
-        "kim": "Porządkowy pilnuje, żeby jedna firma była w bazie jedną firmą. Jest jak archiwista, który zauważa, że „Kowalski sp. z o.o.” na pracuj.pl i „KOWALSKI SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ” na OLX to ta sama firma, i spina ich teczki razem.",
+    "laczyciel-kont": {
+        "kim": "Łączyciel kont z platform pilnuje, żeby jedna firma była w bazie jedną firmą. Jest jak archiwista, który zauważa, że „Kowalski sp. z o.o.” na pracuj.pl i „KOWALSKI SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ” na OLX to ta sama firma, i spina ich teczki razem.",
         "zadania": [
             "Połączyć konta z różnych platform w jednego pracodawcę – najpierw po NIP, a gdy NIP-u brak, po nazwie i stronie www.",
             "Rozpoznać agencje rekrutacyjne, które publikują ogłoszenia „dla klienta” bez nazwy firmy – wtedy oceniamy samą agencję.",
@@ -64,7 +64,7 @@ ROLES = {
         ],
         "korzysta": "Czyta employer_accounts (konta firm), registry_snapshots (odpisy z rejestrów) i legal_form_dictionary (słownik form prawnych, np. „sp. z o.o.” = „spółka z ograniczoną odpowiedzialnością”).",
         "zapisuje": "Jest właścicielem trzech zbiorów: employers (lista pracodawców – jeden wiersz to jedna prawdziwa firma), employer_account_links (które konto należy do której firmy) oraz employer_merge_log (historia połączeń, żeby dało się je cofnąć).",
-        "uruchamia": "Budzi go Urzędnik rejestrowy po nowym odpisie. Jego wyniki czyta potem warstwa 2 (Detektyw podobieństw) i Informator z warstwy 5.",
+        "uruchamia": "Budzi go Weryfikator firm w rejestrach po nowym odpisie. Jego wyniki czyta potem warstwa 2 (Wyszukiwacz podobnych ogłoszeń) i Wyświetlacz odznak zaufania z warstwy 5.",
     },
     # ───────────── WARSTWA 2 – DZIAŁ OGŁOSZEŃ ─────────────
     "platformy-ogloszenia": {
@@ -73,9 +73,9 @@ ROLES = {
             "Przesłać treść każdego nowego ogłoszenia: tytuł, opis, miejsce, rodzaj umowy, widełki płacowe, daty.",
             "Przesyłać zdarzenia z życia ogłoszenia: edycję, odświeżenie, wygaśnięcie, wcześniejsze zamknięcie, ponowną publikację.",
         ],
-        "korzysta": "Nie korzysta z naszych zbiorów. Jej zapytania sprawdza Portier.",
-        "zapisuje": "Dane trafiają przez Przyjmującego ogłoszenia do raw_postings (surowa kopia), job_postings (ogłoszenia w naszym formacie) i posting_events (dziennik zdarzeń ogłoszenia).",
-        "uruchamia": "Każde ogłoszenie budzi Przyjmującego ogłoszenia, a za nim po kolei Redaktora, Analityka wymagań, Wektoryzatora, Detektywa podobieństw i Kronikarza.",
+        "korzysta": "Nie korzysta z naszych zbiorów. Jej zapytania sprawdza Kontroler kluczy API.",
+        "zapisuje": "Dane trafiają przez Importera ogłoszeń do raw_postings (surowa kopia), job_postings (ogłoszenia w naszym formacie) i posting_events (dziennik zdarzeń ogłoszenia).",
+        "uruchamia": "Każde ogłoszenie budzi Importera ogłoszeń, a za nim po kolei Czyściciela treści ogłoszeń, Ekstraktora wymagań z ogłoszeń, Zamieniacza ogłoszeń na wektory, Wyszukiwacza podobnych ogłoszeń i Grupowacza ogłoszeń w rodziny.",
     },
     "model-ai": {
         "kim": "Model AI to zewnętrzny program sztucznej inteligencji, który rozumie tekst (model językowy) i potrafi zamienić tekst na liczby opisujące jego sens (model wektorów). Jest jak tłumacz-specjalista wynajmowany na godziny – płacimy za każde zapytanie.",
@@ -84,12 +84,12 @@ ROLES = {
             "Zamienić tekst ogłoszenia na wektor, żeby dało się wykryć dwa ogłoszenia o tym samym sensie, nawet gdy użyto innych słów.",
         ],
         "korzysta": "Dostaje od nas tylko tekst ogłoszenia, bez danych osób.",
-        "zapisuje": "Sam nic u nas nie zapisuje. Odpowiedzi zapisują nasze programy: cechy w posting_features, wektory w posting_vectors, a każdą odpowiedź także Łącznik z AI w llm_cache (pamięć odpowiedzi).",
-        "uruchamia": "Niczego nie uruchamia. Pytają go zawsze przez Łącznika z AI: Analityk wymagań i Wektoryzator.",
+        "zapisuje": "Sam nic u nas nie zapisuje. Odpowiedzi zapisują nasze programy: cechy w posting_features, wektory w posting_vectors, a każdą odpowiedź także Pośrednik zapytań do AI w llm_cache (pamięć odpowiedzi).",
+        "uruchamia": "Niczego nie uruchamia. Pytają go zawsze przez Pośrednika zapytań do AI: Ekstraktor wymagań z ogłoszeń i Zamieniacz ogłoszeń na wektory.",
         "skroty": "AI – sztuczna inteligencja. LLM – duży model językowy (program, który czyta i pisze tekst). Wektor – lista liczb; podobne znaczenie tekstu daje podobne liczby.",
     },
-    "przyjmujacy": {
-        "kim": "Przyjmujący ogłoszenia jest jak recepcja z tłumaczami. Każda platforma „mówi” w innym formacie, więc przy Przyjmującym pracują adaptery – osobny tłumacz dla każdej platformy – które zamieniają ich format na nasz wspólny.",
+    "importer-ogloszen": {
+        "kim": "Importer ogłoszeń jest jak recepcja z tłumaczami. Każda platforma „mówi” w innym formacie, więc przy Importerze ogłoszeń pracują adaptery – osobny tłumacz dla każdej platformy – które zamieniają ich format na nasz wspólny.",
         "zadania": [
             "Odebrać ogłoszenie albo jego zdarzenie od platformy.",
             "Przetłumaczyć je adapterem danej platformy na nasz format.",
@@ -99,11 +99,11 @@ ROLES = {
         ],
         "korzysta": "Czyta partners (lista platform i wersji ich formatów), żeby wybrać właściwy adapter.",
         "zapisuje": "Jest właścicielem raw_postings (surowa kopia), job_postings (ogłoszenia w naszym formacie) i posting_events (dziennik zdarzeń – tylko dopisujemy, nic nie kasujemy).",
-        "uruchamia": "Uruchamia go platforma. Po zapisaniu zostawia zlecenie dla Redaktora. Gdy konto firmy jest nowe, sprawa idzie też do warstwy 1.",
+        "uruchamia": "Uruchamia go platforma. Po zapisaniu zostawia zlecenie dla Czyściciela treści ogłoszeń. Gdy konto firmy jest nowe, sprawa idzie też do warstwy 1.",
         "skroty": "Adapter – mały program-tłumacz, np. adapter_pracuj.py dla pracuj.pl i adapter_olx.py dla OLX.",
     },
-    "redaktor": {
-        "kim": "Redaktor to korektor, który przed porównaniem ogłoszeń wycina z nich wszystko, co się powtarza w każdym ogłoszeniu firmy: stopkę „O nas”, klauzule RODO, kod HTML. Bez niego każde ogłoszenie tej samej firmy wyglądałoby jak kopia, bo miałoby tę samą stopkę.",
+    "czysciciel-tresci": {
+        "kim": "Czyściciel treści ogłoszeń to korektor, który przed porównaniem ogłoszeń wycina z nich wszystko, co się powtarza w każdym ogłoszeniu firmy: stopkę „O nas”, klauzule RODO, kod HTML. Bez niego każde ogłoszenie tej samej firmy wyglądałoby jak kopia, bo miałoby tę samą stopkę.",
         "zadania": [
             "Usunąć z tekstu znaczniki HTML (kod strony).",
             "Wyciąć typowe stopki i klauzule zgody na przetwarzanie danych.",
@@ -112,11 +112,11 @@ ROLES = {
         ],
         "korzysta": "Czyta job_postings (ogłoszenia), boilerplate_patterns (wzorce typowych stopek, wpisuje je administrator) i employer_boilerplate (akapity powtarzane przez konkretną firmę).",
         "zapisuje": "Jest właścicielem posting_texts_clean (oczyszczony tekst ogłoszeń) i employer_boilerplate (wyuczone powtarzane akapity).",
-        "uruchamia": "Budzi go Przyjmujący ogłoszenia. Po pracy zostawia zlecenia dla Analityka wymagań i Wektoryzatora.",
+        "uruchamia": "Budzi go Importer ogłoszeń. Po pracy zostawia zlecenia dla Ekstraktora wymagań z ogłoszeń i Zamieniacza ogłoszeń na wektory.",
         "skroty": "HTML – język, w którym pisze się strony internetowe. RODO – unijne przepisy o ochronie danych osobowych.",
     },
-    "analityk-wymagan": {
-        "kim": "Analityk wymagań czyta ogłoszenie jak rekruter z długim stażem i wypisuje z niego konkrety: jaki to poziom, czego wymagają, ile płacą, na jaką umowę.",
+    "ekstraktor-wymagan": {
+        "kim": "Ekstraktor wymagań z ogłoszeń czyta ogłoszenie jak rekruter z długim stażem i wypisuje z niego konkrety: jaki to poziom, czego wymagają, ile płacą, na jaką umowę.",
         "zadania": [
             "Najpierw użyć prostych reguł, które są tanie i pewne, np. znaleźć widełki „8000–10000 zł”.",
             "Dopiero dla tego, czego reguły nie złapały, zapytać model AI.",
@@ -125,22 +125,22 @@ ROLES = {
         ],
         "korzysta": "Czyta posting_texts_clean (oczyszczony tekst), seniority_dictionary (słownik poziomów: stażysta, junior, mid, senior…) i skills_dictionary (słownik umiejętności i synonimów).",
         "zapisuje": "Jest właścicielem posting_features (cechy ogłoszeń).",
-        "uruchamia": "Budzi go Redaktor. Do modelu AI zawsze idzie przez Łącznika z AI. Jego wyniki czyta Detektyw podobieństw i Statystyk.",
+        "uruchamia": "Budzi go Czyściciel treści ogłoszeń. Do modelu AI zawsze idzie przez Pośrednika zapytań do AI. Jego wyniki czyta Wyszukiwacz podobnych ogłoszeń i Wyliczacz sygnałów o firmach.",
         "skroty": "Junior / Mid / Senior – poziomy doświadczenia: początkujący, samodzielny, doświadczony.",
     },
-    "wektoryzator": {
-        "kim": "Wektoryzator zamienia tekst na „odcisk znaczenia” – listę liczb. Dwa ogłoszenia, które mówią to samo innymi słowami albo w innej kolejności zdań, dostają bardzo podobne liczby. To pozwala wyłapać parafrazy, których zwykłe porównanie słów nie wykryje.",
+    "zamieniacz-na-wektory": {
+        "kim": "Zamieniacz ogłoszeń na wektory zamienia tekst na „odcisk znaczenia” – listę liczb. Dwa ogłoszenia, które mówią to samo innymi słowami albo w innej kolejności zdań, dostają bardzo podobne liczby. To pozwala wyłapać parafrazy, których zwykłe porównanie słów nie wykryje.",
         "zadania": [
             "Wziąć oczyszczony tekst ogłoszenia.",
-            "Poprosić model wektorów (przez Łącznika z AI) o wektor.",
+            "Poprosić model wektorów (przez Pośrednika zapytań do AI) o wektor.",
             "Zapisać wektor razem z wersją modelu, żeby wiedzieć, którym modelem go policzono.",
         ],
         "korzysta": "Czyta posting_texts_clean (oczyszczony tekst ogłoszeń).",
         "zapisuje": "Jest właścicielem posting_vectors (wektory znaczenia ogłoszeń).",
-        "uruchamia": "Budzi go Redaktor. Po pracy zostawia zlecenie dla Detektywa podobieństw.",
+        "uruchamia": "Budzi go Czyściciel treści ogłoszeń. Po pracy zostawia zlecenie dla Wyszukiwacza podobnych ogłoszeń.",
     },
-    "detektyw": {
-        "kim": "Detektyw podobieństw porównuje nowe ogłoszenie z poprzednimi ogłoszeniami tej samej firmy i szuka „przebranych” powtórek. Jak detektyw, który rozpoznaje tę samą osobę mimo nowej fryzury.",
+    "wyszukiwacz-podobnych": {
+        "kim": "Wyszukiwacz podobnych ogłoszeń porównuje nowe ogłoszenie z poprzednimi ogłoszeniami tej samej firmy i szuka „przebranych” powtórek. Jak detektyw, który rozpoznaje tę samą osobę mimo nowej fryzury.",
         "zadania": [
             "Porównać ogłoszenie tylko z ogłoszeniami tej samej firmy i jej agencji (podobny szablon dwóch różnych firm to nie powtórka).",
             "Rozpoznać rodzaj podobieństwa: dokładna kopia, parafraza, ten sam etat jako Senior i jako Mid, to samo ogłoszenie na innej platformie.",
@@ -148,10 +148,10 @@ ROLES = {
         ],
         "korzysta": "Czyta posting_vectors (wektory), posting_features (cechy), job_postings (ogłoszenia), employer_account_links (które konto należy do której firmy – z warstwy 1) i system_parameters (progi, od kiedy uznać ogłoszenia za podobne).",
         "zapisuje": "Jest właścicielem similar_posting_pairs (pary podobnych ogłoszeń).",
-        "uruchamia": "Budzi go Wektoryzator. Po pracy zostawia zlecenie dla Kronikarza.",
+        "uruchamia": "Budzi go Zamieniacz ogłoszeń na wektory. Po pracy zostawia zlecenie dla Grupowacza ogłoszeń w rodziny.",
     },
-    "kronikarz": {
-        "kim": "Kronikarz prowadzi kronikę każdego stanowiska. Łączy podobne ogłoszenia w „rodzinę” – wszystkie wersje tego samego stanowiska w czasie – i liczy jej historię: ile razy wracało i jak długo wisiało.",
+    "grupowacz-ogloszen": {
+        "kim": "Grupowacz ogłoszeń w rodziny prowadzi kronikę każdego stanowiska. Łączy podobne ogłoszenia w „rodzinę” – wszystkie wersje tego samego stanowiska w czasie – i liczy jej historię: ile razy wracało i jak długo wisiało.",
         "zadania": [
             "Połączyć pary podobnych ogłoszeń w rodziny.",
             "Policzyć cykl życia rodziny: liczbę publikacji, dni widoczności, przerwy, odświeżenia, warianty poziomu, platformy.",
@@ -159,7 +159,7 @@ ROLES = {
         ],
         "korzysta": "Czyta similar_posting_pairs (pary podobnych ogłoszeń), posting_events (dziennik zdarzeń) i job_postings (ogłoszenia).",
         "zapisuje": "Jest właścicielem posting_families (rodziny ogłoszeń) i posting_lifecycles (cykle życia rodzin).",
-        "uruchamia": "Budzą go Detektyw podobieństw i Zegar. Jego wyniki czyta Statystyk (warstwa 4) i Informator (warstwa 5), który pokazuje kandydatowi np. „publikowane 6. raz”.",
+        "uruchamia": "Budzą go Wyszukiwacz podobnych ogłoszeń i Uruchamiacz zadań cyklicznych. Jego wyniki czyta Wyliczacz sygnałów o firmach (warstwa 4) i Wyświetlacz odznak zaufania (warstwa 5), który pokazuje kandydatowi np. „publikowane 6. raz”.",
     },
     # ───────────── WARSTWA 3 – DZIAŁ ZGŁOSZEŃ ─────────────
     "kandydat": {
@@ -170,8 +170,8 @@ ROLES = {
             "Odpowiedzieć na przypomnienie „czy firma się odezwała?”.",
         ],
         "korzysta": "Nie korzysta bezpośrednio z bazy – widzi tylko widżet na stronie platformy.",
-        "zapisuje": "Jego zgłoszenie trafia przez Kancelarię do reports (zgłoszenia), a zgody przez Notariusza zgód do consents (zgody).",
-        "uruchamia": "Wysłanie zgłoszenia budzi Kancelarię, a ta całą kontrolę zgłoszenia (Bramkarz, Daktyloskop, Kierownik zgłoszeń).",
+        "zapisuje": "Jego zgłoszenie trafia przez Przyjmowacza zgłoszeń kandydatów do reports (zgłoszenia), a zgody przez Rejestratora zgód kandydatów do consents (zgody).",
+        "uruchamia": "Wysłanie zgłoszenia budzi Przyjmowacza zgłoszeń kandydatów, a ta całą kontrolę zgłoszenia (Odsiewacz botów, Porównywacz odcisków urządzeń, Oceniacz wiarygodności zgłoszeń).",
         "skroty": "Pseudonim – zastępczy identyfikator osoby (ciąg znaków), z którego my nie odczytamy, kim ona jest. Tożsamość zna tylko platforma.",
     },
     "widzet": {
@@ -184,8 +184,8 @@ ROLES = {
             "Pokazać odznakę przy ofercie (plik trust_badge.js, warstwa 5).",
         ],
         "korzysta": "Niczego nie przechowuje u siebie – wszystko trzyma tylko w pamięci przeglądarki, dopóki nie wyśle.",
-        "zapisuje": "Sam nic nie zapisuje w bazie. Wysyła dane do naszych programów: zgłoszenie do Kancelarii, zgody do Notariusza zgód.",
-        "uruchamia": "Wysłanie formularza budzi Kancelarię i Notariusza zgód. Uwaga: ktoś może podrobić widżet i wysłać nam fałszywe dane z pominięciem formularza, dlatego wszystko, co przyśle, sprawdzamy.",
+        "zapisuje": "Sam nic nie zapisuje w bazie. Wysyła dane do naszych programów: zgłoszenie do Przyjmowacza zgłoszeń kandydatów, zgody do Rejestratora zgód kandydatów.",
+        "uruchamia": "Wysłanie formularza budzi Przyjmowacza zgłoszeń kandydatów i Rejestratora zgód kandydatów. Uwaga: ktoś może podrobić widżet i wysłać nam fałszywe dane z pominięciem formularza, dlatego wszystko, co przyśle, sprawdzamy.",
         "skroty": "Przeglądarka – program do oglądania stron, np. Chrome. Token – jednorazowy „bilet” wydany przez Cloudflare, ważny 300 sekund.",
     },
     "platformy-log": {
@@ -196,48 +196,48 @@ ROLES = {
             "Na naszą prośbę wysłać kandydatowi przypomnienie (to platforma zna jego e-mail, nie my).",
         ],
         "korzysta": "Nie korzysta z naszych zbiorów.",
-        "zapisuje": "Dane zapisuje Rejestrator aplikacji w application_log (dziennik aplikacji).",
-        "uruchamia": "Budzi Rejestratora aplikacji. Przypomnienia zleca jej nasza Sekretarka.",
+        "zapisuje": "Dane zapisuje Importer logu aplikacji w application_log (dziennik aplikacji).",
+        "uruchamia": "Budzi Importera logu aplikacji. Przypomnienia zleca jej nasz Wysyłacz przypomnień.",
         "skroty": "Log – dziennik zdarzeń, czyli lista „kto, co, kiedy”.",
     },
     "cloudflare": {
-        "kim": "Cloudflare Turnstile to zewnętrzna usługa, która odróżnia ludzi od botów (automatów). Jest jak bramkarz w klubie, który daje pieczątkę na rękę – a nasz Bramkarz potem sprawdza, czy pieczątka jest prawdziwa i świeża.",
+        "kim": "Cloudflare Turnstile to zewnętrzna usługa, która odróżnia ludzi od botów (automatów). Jest jak bramkarz w klubie, który daje pieczątkę na rękę – a nasz Odsiewacz botów potem sprawdza, czy pieczątka jest prawdziwa i świeża.",
         "zadania": [
             "W przeglądarce kandydata sprawdzić, czy to człowiek, i wydać token.",
-            "Na pytanie naszego Bramkarza odpowiedzieć: token ważny (tak) albo nie (z kodem błędu).",
+            "Na pytanie naszego Odsiewacza botów odpowiedzieć: token ważny (tak) albo nie (z kodem błędu).",
         ],
         "korzysta": "Dostaje od nas tylko token, nasz tajny klucz i ewentualnie adres IP. Nie dostaje żadnych danych o karcie graficznej ani urządzeniu – swoje sprawdzenia robi sam.",
-        "zapisuje": "Jego odpowiedź zapisuje Bramkarz w bot_checks (wyniki sprawdzeń).",
-        "uruchamia": "Niczego nie uruchamia. Pyta go Bramkarz.",
+        "zapisuje": "Jego odpowiedź zapisuje Odsiewacz botów w bot_checks (wyniki sprawdzeń).",
+        "uruchamia": "Niczego nie uruchamia. Pyta go Odsiewacz botów.",
         "skroty": "Bot – program udający człowieka. Token jest ważny 300 sekund i można go sprawdzić tylko raz. IP – adres komputera w internecie.",
     },
-    "kancelaria": {
-        "kim": "Kancelaria to biuro podawcze: przyjmuje każde pismo, stawia pieczątkę z datą i odkłada do segregatora, zanim ktokolwiek je oceni. Dzięki temu żadne zgłoszenie nie ginie, nawet gdy coś dalej w łańcuchu się zepsuje.",
+    "przyjmowacz-zgloszen": {
+        "kim": "Przyjmowacz zgłoszeń kandydatów to biuro podawcze: przyjmuje każde pismo, stawia pieczątkę z datą i odkłada do segregatora, zanim ktokolwiek je oceni. Dzięki temu żadne zgłoszenie nie ginie, nawet gdy coś dalej w łańcuchu się zepsuje.",
         "zadania": [
             "Przyjąć zgłoszenie z widżetu.",
             "Sprawdzić format i to, czy oferta, której dotyczy, w ogóle istnieje.",
-            "Od razu poprosić Bramkarza o sprawdzenie tokenu (token żyje tylko 300 sekund).",
-            "Poprosić Daktyloskopa o skrót urządzenia.",
-            "Zapisać zgłoszenie i zostawić Kierownikowi zgłoszeń zlecenie oceny.",
+            "Od razu poprosić Odsiewacza botów o sprawdzenie tokenu (token żyje tylko 300 sekund).",
+            "Poprosić Porównywacza odcisków urządzeń o skrót urządzenia.",
+            "Zapisać zgłoszenie i zostawić Oceniaczowi wiarygodności zgłoszeń zlecenie oceny.",
         ],
         "korzysta": "Czyta job_postings (ogłoszenia), żeby sprawdzić, czy oferta istnieje.",
         "zapisuje": "Jest właścicielem reports (zgłoszenia kandydatów). Zgłoszeń się nie poprawia – tylko dopisuje nowe.",
-        "uruchamia": "Budzi go widżet. On uruchamia Bramkarza, Daktyloskopa i Kierownika zgłoszeń.",
+        "uruchamia": "Budzi go widżet. On uruchamia Odsiewacza botów, Porównywacza odcisków urządzeń i Oceniacza wiarygodności zgłoszeń.",
     },
-    "bramkarz": {
-        "kim": "Bramkarz sprawdza „pieczątkę” od Cloudflare – czy zgłoszenie wysłał człowiek, a nie automat. To ten sam program, który w pierwotnym pomyśle nazywał się decide_is_reliable_from_cloudflare_data.py.",
+    "odsiewacz-botow": {
+        "kim": "Odsiewacz botów sprawdza „pieczątkę” od Cloudflare – czy zgłoszenie wysłał człowiek, a nie automat. To ten sam program, który w pierwotnym pomyśle nazywał się decide_is_reliable_from_cloudflare_data.py.",
         "zadania": [
             "Wysłać token z formularza do Cloudflare razem z naszym tajnym kluczem.",
             "Odebrać odpowiedź tak/nie i kody błędów.",
-            "Zapisać wynik, żeby Kierownik zgłoszeń i Analityk nadużyć mogli go użyć.",
+            "Zapisać wynik, żeby Oceniacz wiarygodności zgłoszeń i Wykrywacz kampanii zgłoszeń mogli go użyć.",
             "Gdy Cloudflare nie odpowiada – zapisać „nie sprawdzono” (zgłoszenie dostanie niższą wagę).",
         ],
-        "korzysta": "Nie czyta żadnych zbiorów – dostaje token od Kancelarii.",
+        "korzysta": "Nie czyta żadnych zbiorów – dostaje token od Przyjmowacza zgłoszeń kandydatów.",
         "zapisuje": "Jest właścicielem bot_checks (wyniki sprawdzeń w Cloudflare).",
-        "uruchamia": "Budzi go Kancelaria, od razu po przyjęciu zgłoszenia.",
+        "uruchamia": "Budzi go Przyjmowacz zgłoszeń kandydatów, od razu po przyjęciu zgłoszenia.",
     },
-    "rejestrator-aplikacji": {
-        "kim": "Rejestrator aplikacji prowadzi listę obecności: zapisuje, kto (pod pseudonimem) aplikował na które ogłoszenie i kiedy. To nasz najmocniejszy dowód przeciw fałszywym zgłoszeniom – konkurencja może zmyślić skargę, ale trudno jej zmyślić aplikację w systemie platformy.",
+    "importer-logu-aplikacji": {
+        "kim": "Importer logu aplikacji prowadzi listę obecności: zapisuje, kto (pod pseudonimem) aplikował na które ogłoszenie i kiedy. To nasz najmocniejszy dowód przeciw fałszywym zgłoszeniom – konkurencja może zmyślić skargę, ale trudno jej zmyślić aplikację w systemie platformy.",
         "zadania": [
             "Odebrać od platformy informację „pseudonim X aplikował na ofertę Y w dniu Z”.",
             "Sprawdzić format danych.",
@@ -245,23 +245,23 @@ ROLES = {
         ],
         "korzysta": "Czyta partners (lista platform i ich formatów).",
         "zapisuje": "Jest właścicielem application_log (dziennik aplikacji).",
-        "uruchamia": "Budzi go platforma. Jego zbiór czytają Sprawdzacz aplikacji, Sekretarka, Analityk nadużyć i Statystyk.",
+        "uruchamia": "Budzi go platforma. Jego zbiór czytają Weryfikator złożenia aplikacji, Wysyłacz przypomnień, Wykrywacz kampanii zgłoszeń i Wyliczacz sygnałów o firmach.",
     },
-    "sprawdzacz": {
-        "kim": "Sprawdzacz aplikacji to pracownik, który na prośbę kierownika zagląda do listy obecności i mówi: „tak, ta osoba naprawdę aplikowała, i to już 40 dni temu” albo „nie ma jej na liście”.",
+    "weryfikator-aplikacji": {
+        "kim": "Weryfikator złożenia aplikacji to pracownik, który na prośbę kierownika zagląda do listy obecności i mówi: „tak, ta osoba naprawdę aplikowała, i to już 40 dni temu” albo „nie ma jej na liście”.",
         "zadania": [
             "Znaleźć w dzienniku aplikacji aplikację zgłaszającego na tę ofertę.",
             "Sprawdzić, czy minęło dość dni, żeby mówić o „ciszy” (próg jest w parametrach systemu).",
             "Zauważyć podejrzane wzorce, np. setki aplikacji jednego dnia (masowe wysyłanie przez automat).",
-            "Oddać Kierownikowi opinię – sam niczego nie zapisuje.",
+            "Oddać Oceniaczowi wiarygodności zgłoszeń opinię – sam niczego nie zapisuje.",
         ],
         "korzysta": "Czyta application_log (dziennik aplikacji) i system_parameters (parametry, np. po ilu dniach cisza oznacza ghosting).",
-        "zapisuje": "Nic. Jego wynik zapisuje Kierownik zgłoszeń w ocenie zgłoszenia.",
-        "uruchamia": "Budzi go Kierownik zgłoszeń.",
+        "zapisuje": "Nic. Jego wynik zapisuje Oceniacz wiarygodności zgłoszeń w ocenie zgłoszenia.",
+        "uruchamia": "Budzi go Oceniacz wiarygodności zgłoszeń.",
         "skroty": "Ghosting – sytuacja, gdy firma po prostu przestaje odpowiadać kandydatowi.",
     },
-    "daktyloskop": {
-        "kim": "Daktyloskop to technik od odcisków palców, tylko że odciska urządzenia, nie palce. Z cech komputera (np. karty graficznej, ekranu, strefy czasowej) liczy skrót i sprawdza, czy z tego samego urządzenia nie przychodzi podejrzanie dużo zgłoszeń z różnych kont. To program, który w pierwotnym pomyśle nazywał się check_this_fingerprint.py.",
+    "porownywacz-odciskow": {
+        "kim": "Porównywacz odcisków urządzeń to technik od odcisków palców, tylko że odciska urządzenia, nie palce. Z cech komputera (np. karty graficznej, ekranu, strefy czasowej) liczy skrót i sprawdza, czy z tego samego urządzenia nie przychodzi podejrzanie dużo zgłoszeń z różnych kont. To program, który w pierwotnym pomyśle nazywał się check_this_fingerprint.py.",
         "zadania": [
             "Sprawdzić, czy kandydat zgodził się na zbieranie cech urządzenia.",
             "Policzyć skrót (hasz) z cech urządzenia i od razu zapomnieć surowe cechy.",
@@ -270,11 +270,11 @@ ROLES = {
         ],
         "korzysta": "Czyta consents (zgody), żeby wiedzieć, czy wolno mu działać.",
         "zapisuje": "Jest właścicielem device_fingerprints (odciski urządzeń – same skróty i liczniki).",
-        "uruchamia": "Budzi go Kancelaria. Jego zbiór czytają Kierownik zgłoszeń i Analityk nadużyć.",
+        "uruchamia": "Budzi go Przyjmowacz zgłoszeń kandydatów. Jego zbiór czytają Oceniacz wiarygodności zgłoszeń i Wykrywacz kampanii zgłoszeń.",
         "skroty": "Hasz (skrót) – liczba wyliczona z danych tak, że z niej nie da się odtworzyć danych, ale te same dane zawsze dają ten sam hasz. Fingerprint – „odcisk palca” urządzenia.",
     },
-    "analityk-naduzyc": {
-        "kim": "Analityk nadużyć to ochroniarz patrzący na monitoring całego budynku, a nie na jedną osobę. Szuka zorganizowanych ataków, np. gdy konkurencja w jeden wieczór wysyła 300 fałszywych skarg na jedną firmę.",
+    "wykrywacz-kampanii": {
+        "kim": "Wykrywacz kampanii zgłoszeń to ochroniarz patrzący na monitoring całego budynku, a nie na jedną osobę. Szuka zorganizowanych ataków, np. gdy konkurencja w jeden wieczór wysyła 300 fałszywych skarg na jedną firmę.",
         "zadania": [
             "Regularnie przeglądać świeże zgłoszenia.",
             "Szukać fal zgłoszeń: wiele skarg na jedną firmę w krótkim czasie, z nowych kont, z tych samych urządzeń albo adresów.",
@@ -283,12 +283,12 @@ ROLES = {
         ],
         "korzysta": "Czyta reports (zgłoszenia), device_fingerprints (odciski urządzeń), bot_checks (wyniki Cloudflare), application_log (dziennik aplikacji) i api_access_log (log zapytań do API).",
         "zapisuje": "Jest właścicielem abuse_alerts (alerty nadużyć).",
-        "uruchamia": "Budzą go Zegar i nagły skok liczby zgłoszeń. Jego alerty czyta Kierownik zgłoszeń i trafiają do kolejki moderatora.",
+        "uruchamia": "Budzą go Uruchamiacz zadań cyklicznych i nagły skok liczby zgłoszeń. Jego alerty czyta Oceniacz wiarygodności zgłoszeń i trafiają do kolejki moderatora.",
     },
-    "kierownik": {
-        "kim": "Kierownik zgłoszeń to szef działu – Twój „zespół ludzi” z pierwotnego pomysłu (check_is_user_complaint_reliable.py). Sam niczego nie mierzy, tylko zbiera opinie swoich pracowników i podejmuje decyzję, jak sędzia, który słucha biegłych.",
+    "oceniacz-wiarygodnosci": {
+        "kim": "Oceniacz wiarygodności zgłoszeń to szef działu – Twój „zespół ludzi” z pierwotnego pomysłu (check_is_user_complaint_reliable.py). Sam niczego nie mierzy, tylko zbiera opinie swoich pracowników i podejmuje decyzję, jak sędzia, który słucha biegłych.",
         "zadania": [
-            "Zebrać wynik Bramkarza (człowiek czy bot), opinię Sprawdzacza aplikacji (czy naprawdę aplikował), dane Daktyloskopa (ile zgłoszeń z tego urządzenia) i alerty Analityka nadużyć.",
+            "Zebrać wynik Odsiewacza botów (człowiek czy bot), opinię Weryfikatora złożenia aplikacji (czy naprawdę aplikował), dane Porównywacza odcisków urządzeń (ile zgłoszeń z tego urządzenia) i alerty Wykrywacza kampanii zgłoszeń.",
             "Połączyć je w jedną wagę zgłoszenia od 0 (nic nie warte) do 1 (bardzo wiarygodne).",
             "Podjąć decyzję: przyjęte, do moderacji (niech zdecyduje człowiek) albo odrzucone.",
             "Zapisać decyzję z powodami i wersją reguł.",
@@ -296,11 +296,11 @@ ROLES = {
         ],
         "korzysta": "Czyta reports (zgłoszenia), bot_checks (wyniki Cloudflare), device_fingerprints (odciski urządzeń), abuse_alerts (alerty nadużyć), moderator_decisions (decyzje moderatorów) i system_parameters (progi wag).",
         "zapisuje": "Jest właścicielem report_verdicts (oceny zgłoszeń). Z tego zbioru i z reports liczy się widok validated_reports (zgłoszenia zwalidowane) – to dawny plik walidated_users_failed_job_application.csv.",
-        "uruchamia": "Budzą go Kancelaria, nowy alert i decyzja moderatora. On sam pyta Sprawdzacza aplikacji. Zgłoszenia „do moderacji” trafiają na Biurko moderatora.",
+        "uruchamia": "Budzą go Przyjmowacz zgłoszeń kandydatów, nowy alert i decyzja moderatora. On sam pyta Weryfikatora złożenia aplikacji. Zgłoszenia „do moderacji” trafiają na Zapisywacz decyzji moderatora.",
         "skroty": "Widok – zapisane zapytanie, które za każdym razem liczy wynik na żywo z innych tabel, więc nigdy się z nimi nie rozjeżdża.",
     },
-    "sekretarka": {
-        "kim": "Sekretarka pamięta o terminach i przypomina ludziom o sprawach. Bez niej mało kto sam zgłosiłby, że firma się nie odezwała – a z nią dostajemy dużo więcej zgłoszeń, także tych dobrych (zatrudnienie).",
+    "wysylacz-przypomnien": {
+        "kim": "Wysyłacz przypomnień pamięta o terminach i przypomina ludziom o sprawach. Bez niego mało kto sam zgłosiłby, że firma się nie odezwała – a z nim dostajemy dużo więcej zgłoszeń, także tych dobrych (zatrudnienie).",
         "zadania": [
             "Sprawdzać, komu minęło ustalone X dni od aplikacji.",
             "Upewnić się, że kandydat zgodził się na przypomnienia i że jeszcze mu nie przypomniano.",
@@ -309,29 +309,29 @@ ROLES = {
         ],
         "korzysta": "Czyta application_log (dziennik aplikacji), consents (zgody) i system_parameters (po ilu dniach przypominać).",
         "zapisuje": "Jest właścicielem reminders_sent (wysłane przypomnienia).",
-        "uruchamia": "Budzi ją Zegar. Odpowiedź kandydata wraca przez widżet do Kancelarii.",
+        "uruchamia": "Budzi go Uruchamiacz zadań cyklicznych. Odpowiedź kandydata wraca przez widżet do Przyjmowacza zgłoszeń kandydatów.",
     },
-    "notariusz": {
-        "kim": "Notariusz zgód spisuje i przechowuje zgody, tak jak notariusz poświadcza podpisy. RODO wymaga, żebyśmy umieli udowodnić, że ktoś zgodził się na coś i na jaką wersję tekstu.",
+    "rejestrator-zgod": {
+        "kim": "Rejestrator zgód kandydatów spisuje i przechowuje zgody, tak jak notariusz poświadcza podpisy. RODO wymaga, żebyśmy umieli udowodnić, że ktoś zgodził się na coś i na jaką wersję tekstu.",
         "zadania": [
             "Zapisać udzielenie albo wycofanie zgody.",
             "Zapisać, na co jest zgoda (przypomnienia, cechy urządzenia) i jaka była wersja treści zgody.",
         ],
         "korzysta": "Nie czyta żadnych zbiorów.",
         "zapisuje": "Jest właścicielem consents (zgody kandydatów).",
-        "uruchamia": "Budzi go widżet (okienko zgody). Jego zbiór czytają Daktyloskop, Sekretarka i Urzędnik RODO.",
+        "uruchamia": "Budzi go widżet (okienko zgody). Jego zbiór czytają Porównywacz odcisków urządzeń, Wysyłacz przypomnień i Realizator wniosków RODO.",
         "skroty": "RODO – unijne rozporządzenie o ochronie danych osobowych.",
     },
     # ───────────── WARSTWA 4 – DZIAŁ ANALIZ ─────────────
     "model-ai-teczki": {
         "kim": "Ten sam zewnętrzny model językowy, ale w roli asystenta, który streszcza dowody. Jest jak aplikant w kancelarii prawnej, który przygotowuje teczkę sprawy, ale wyroku nie wydaje.",
         "zadania": [
-            "Na prośbę Asystenta śledczego streścić sprawę: oś czasu ogłoszeń, podobieństwa, liczby zgłoszeń.",
+            "Na prośbę Kompletowacza teczek spraw streścić sprawę: oś czasu ogłoszeń, podobieństwa, liczby zgłoszeń.",
             "Nigdy nie wystawiać wyniku i niczego nie publikować – decyduje człowiek.",
         ],
         "korzysta": "Dostaje tylko dane zbiorcze o firmie i jej ogłoszeniach, bez danych kandydatów.",
-        "zapisuje": "Sam nic nie zapisuje. Teczkę zapisuje Asystent śledczy w case_files.",
-        "uruchamia": "Niczego nie uruchamia. Pyta go Asystent śledczy przez Łącznika z AI.",
+        "zapisuje": "Sam nic nie zapisuje. Teczkę zapisuje Kompletowacz teczek spraw w case_files.",
+        "uruchamia": "Niczego nie uruchamia. Pyta go Kompletowacz teczek spraw przez Pośrednika zapytań do AI.",
         "skroty": "LLM – duży model językowy.",
     },
     "personel": {
@@ -340,13 +340,13 @@ ROLES = {
             "Ustalić na start wagi i progi Trust Score (zanim będzie model, decyduje zespół).",
             "Rozstrzygać sprawy sporne – każda decyzja to później „etykieta”, z której uczy się model.",
         ],
-        "korzysta": "Korzysta przez programy: Biuro administratora i Biurko moderatora.",
+        "korzysta": "Korzysta przez programy: Edytor ustawień systemu i Zapisywacz decyzji moderatora.",
         "zapisuje": "Ustawienia trafiają do system_parameters, a decyzje do moderator_decisions.",
-        "uruchamia": "Zmiany personelu budzą Sędziego i Rzecznika do ponownego przeliczenia.",
+        "uruchamia": "Zmiany personelu budzą Wystawiacza Trust Score i Publikatora Trust Score do ponownego przeliczenia.",
         "skroty": "Etykieta – poprawna odpowiedź przypisana do przykładu, np. „ta firma to ghost job”.",
     },
-    "statystyk": {
-        "kim": "Statystyk liczy. Dla każdej firmy co jakiś czas zbiera z całego systemu liczby, które ją opisują – jak lekarz, który przed diagnozą zbiera wyniki wszystkich badań w jedną kartę.",
+    "wyliczacz-sygnalow": {
+        "kim": "Wyliczacz sygnałów o firmach liczy. Dla każdej firmy co jakiś czas zbiera z całego systemu liczby, które ją opisują – jak lekarz, który przed diagnozą zbiera wyniki wszystkich badań w jedną kartę.",
         "zadania": [
             "Policzyć odsetek powtórek ogłoszeń i liczbę publikacji na stanowisko.",
             "Policzyć zgłoszenia ciszy, odmów i zatrudnień na 100 aplikacji (dlatego potrzebny jest dziennik aplikacji).",
@@ -356,10 +356,10 @@ ROLES = {
         ],
         "korzysta": "Czyta posting_lifecycles (cykle życia), posting_families (rodziny ogłoszeń), posting_features (cechy), validated_reports (zgłoszenia zwalidowane – widok), application_log (dziennik aplikacji), registry_snapshots (odpisy z rejestrów), employers (pracodawcy) i moderator_decisions (decyzje moderatorów).",
         "zapisuje": "Jest właścicielem employer_signals (sygnały pracodawców).",
-        "uruchamia": "Budzi go Zegar albo nowe dane. Po pracy budzi Sędziego.",
+        "uruchamia": "Budzi go Uruchamiacz zadań cyklicznych albo nowe dane. Po pracy budzi Wystawiacza Trust Score.",
     },
-    "sedzia": {
-        "kim": "Sędzia wystawia ocenę – Trust Score od 0 do 100. Patrzy na kartę z sygnałami i liczy wynik według zasad, a przy wyniku zawsze zapisuje uzasadnienie i to, ile dowodów za nim stoi.",
+    "wystawiacz-trust-score": {
+        "kim": "Wystawiacz Trust Score wystawia ocenę od 0 do 100. Patrzy na kartę z sygnałami i liczy wynik według zasad, a przy wyniku zawsze zapisuje uzasadnienie i to, ile dowodów za nim stoi.",
         "zadania": [
             "Policzyć wynik 0–100 z sygnałów firmy – na start według wag ustalonych przez zespół, później według wytrenowanego modelu.",
             "Policzyć pewność: ile danych stoi za wynikiem (2 zgłoszenia to mało, 200 to dużo).",
@@ -367,11 +367,11 @@ ROLES = {
         ],
         "korzysta": "Czyta employer_signals (sygnały firm), system_parameters (wagi i progi) i model_registry (który model jest aktywny).",
         "zapisuje": "Jest właścicielem trust_score_history (historia Trust Score – każdy wynik dopisujemy, starych nie nadpisujemy).",
-        "uruchamia": "Budzi go Statystyk. Po pracy budzi Rzecznika.",
+        "uruchamia": "Budzi go Wyliczacz sygnałów o firmach. Po pracy budzi Publikatora Trust Score.",
         "skroty": "Trust Score – wskaźnik wiarygodności pracodawcy.",
     },
-    "asystent": {
-        "kim": "Asystent śledczy przygotowuje moderatorowi teczkę trudnej sprawy, żeby człowiek nie musiał sam przekopywać setek wpisów.",
+    "kompletowacz-teczek": {
+        "kim": "Kompletowacz teczek spraw przygotowuje moderatorowi teczkę trudnej sprawy, żeby człowiek nie musiał sam przekopywać setek wpisów.",
         "zadania": [
             "Wybrać sprawy graniczne (wynik blisko progu) i odwołania firm.",
             "Zebrać fakty: oś czasu ogłoszeń, pary podobieństw, liczby zgłoszeń.",
@@ -379,10 +379,10 @@ ROLES = {
         ],
         "korzysta": "Czyta posting_families (rodziny ogłoszeń), similar_posting_pairs (pary podobnych), employer_signals (sygnały firm), report_verdicts (oceny zgłoszeń) i appeals (odwołania firm).",
         "zapisuje": "Jest właścicielem case_files (teczki spraw).",
-        "uruchamia": "Budzi go wynik blisko progu albo nowe odwołanie. Do AI idzie przez Łącznika z AI. Teczkę ogląda moderator na Biurku moderatora.",
+        "uruchamia": "Budzi go wynik blisko progu albo nowe odwołanie. Do AI idzie przez Pośrednika zapytań do AI. Teczkę ogląda moderator w Zapisywaczu decyzji moderatora.",
     },
-    "rzecznik": {
-        "kim": "Rzecznik decyduje, co wolno pokazać publicznie. Wynik roboczy Sędziego to jeszcze nie komunikat – Rzecznik pilnuje, żebyśmy nie oskarżyli firmy na podstawie zbyt małej liczby dowodów.",
+    "publikator-trust-score": {
+        "kim": "Publikator Trust Score decyduje, co wolno pokazać publicznie. Wynik roboczy Wystawiacza Trust Score to jeszcze nie komunikat – Publikator Trust Score pilnuje, żebyśmy nie oskarżyli firmy na podstawie zbyt małej liczby dowodów.",
         "zadania": [
             "Gdy pewność jest mała – opublikować „za mało danych” zamiast liczby.",
             "Gdy wynik spada do strefy ostrzeżenia – wstrzymać publikację, aż zatwierdzi moderator.",
@@ -390,10 +390,10 @@ ROLES = {
         ],
         "korzysta": "Czyta trust_score_history (wyniki robocze), moderator_decisions (decyzje moderatorów) i system_parameters (progi pewności i ostrzeżeń).",
         "zapisuje": "Jest właścicielem published_trust_scores (opublikowane wyniki) – tylko ten zbiór widzą kandydaci i firmy.",
-        "uruchamia": "Budzą go Sędzia i decyzja moderatora. Wstrzymane wyniki trafiają na Biurko moderatora.",
+        "uruchamia": "Budzą go Wystawiacz Trust Score i decyzja moderatora. Wstrzymane wyniki trafiają na Zapisywacz decyzji moderatora.",
     },
-    "bibliotekarz": {
-        "kim": "Bibliotekarz układa materiały do nauki dla przyszłego modelu – jak nauczyciel, który zbiera zadania razem z poprawnymi odpowiedziami.",
+    "zbieracz-danych-treningowych": {
+        "kim": "Zbieracz danych treningowych układa materiały do nauki dla przyszłego modelu – jak nauczyciel, który zbiera zadania razem z poprawnymi odpowiedziami.",
         "zadania": [
             "Złożyć zestaw przykładów: sygnały firm plus decyzje moderatorów jako poprawne odpowiedzi.",
             "Usunąć z niego wszelkie dane osób.",
@@ -401,10 +401,10 @@ ROLES = {
         ],
         "korzysta": "Czyta employer_signals (sygnały firm), posting_lifecycles (cykle życia) i moderator_decisions (decyzje moderatorów).",
         "zapisuje": "Jest właścicielem training_datasets (zbiory treningowe).",
-        "uruchamia": "Uruchamia go analityk danych (człowiek). Jego zbiór czyta Trener.",
+        "uruchamia": "Uruchamia go analityk danych (człowiek). Jego zbiór czyta Trener sztucznej inteligencji.",
     },
-    "trener": {
-        "kim": "Trener uczy model i robi mu egzamin – na przykładach, których model wcześniej nie widział, żeby nie zdał „na pamięć”.",
+    "trener-ai": {
+        "kim": "Trener sztucznej inteligencji uczy model i robi mu egzamin – na przykładach, których model wcześniej nie widział, żeby nie zdał „na pamięć”.",
         "zadania": [
             "Nauczyć model na zbiorze treningowym.",
             "Sprawdzić go na osobnych przykładach i porównać z obecnymi regułami.",
@@ -412,7 +412,7 @@ ROLES = {
         ],
         "korzysta": "Czyta training_datasets (zbiory treningowe).",
         "zapisuje": "Jest właścicielem model_registry (rejestr modeli).",
-        "uruchamia": "Uruchamia go analityk danych. Aktywny model czyta potem Sędzia.",
+        "uruchamia": "Uruchamia go analityk danych. Aktywny model czyta potem Wystawiacz Trust Score.",
     },
     # ───────────── WARSTWA 5 – BIURO OBSŁUGI ─────────────
     "kandydat-odznaka": {
@@ -422,9 +422,9 @@ ROLES = {
             "Zobaczyć fakty o ogłoszeniu, np. „publikowane 6. raz”.",
             "Złożyć przez platformę wniosek RODO, np. o usunięcie swoich danych.",
         ],
-        "korzysta": "Pośrednio czyta published_trust_scores (opublikowane wyniki) i posting_lifecycles (cykle życia) – przez Informatora.",
-        "zapisuje": "Wniosek RODO trafia przez Urzędnika RODO do privacy_requests.",
-        "uruchamia": "Otwarcie oferty budzi Informatora; wniosek RODO budzi Urzędnika RODO.",
+        "korzysta": "Pośrednio czyta published_trust_scores (opublikowane wyniki) i posting_lifecycles (cykle życia) – przez Wyświetlacza odznak zaufania.",
+        "zapisuje": "Wniosek RODO trafia przez Realizatora wniosków RODO do privacy_requests.",
+        "uruchamia": "Otwarcie oferty budzi Wyświetlacza odznak zaufania; wniosek RODO budzi Realizatora wniosków RODO.",
     },
     "pracodawca": {
         "kim": "Pracodawca to firma (albo agencja rekrutacyjna) oceniana przez system. Ma prawo zobaczyć swoją ocenę i się z nią nie zgodzić – jak uczeń, który może zapytać o uzasadnienie oceny.",
@@ -433,9 +433,9 @@ ROLES = {
             "Zobaczyć swój wynik, powody i rodziny swoich ogłoszeń.",
             "Złożyć odwołanie, np. „stanowisko obsadzone” albo „to nie nasze ogłoszenie” (gdy ktoś się pod firmę podszywa).",
         ],
-        "korzysta": "Przez Okienko dla firm czyta published_trust_scores, employer_signals, posting_families i employers.",
+        "korzysta": "Przez Przyjmowacz odwołań firm czyta published_trust_scores, employer_signals, posting_families i employers.",
         "zapisuje": "Odwołanie trafia do appeals (odwołania firm).",
-        "uruchamia": "Odwołanie budzi Asystenta śledczego i trafia na Biurko moderatora.",
+        "uruchamia": "Odwołanie budzi Kompletowacza teczek spraw i trafia na Zapisywacz decyzji moderatora.",
     },
     "moderator": {
         "kim": "Moderator to nasz pracownik-człowiek, który rozstrzyga to, czego nie powinien rozstrzygać automat – jak sędzia drugiej instancji.",
@@ -443,9 +443,9 @@ ROLES = {
             "Przejrzeć kolejkę spraw: zgłoszenia „do moderacji”, alerty nadużyć, odwołania firm, wstrzymane ostrzeżenia.",
             "Obejrzeć teczkę z dowodami i podjąć decyzję z uzasadnieniem.",
         ],
-        "korzysta": "Przez Biurko moderatora czyta moderation_queue (kolejka – widok), case_files (teczki), reports (zgłoszenia, bez tożsamości), similar_posting_pairs (podobieństwa) i appeals (odwołania).",
+        "korzysta": "Przez Zapisywacz decyzji moderatora czyta moderation_queue (kolejka – widok), case_files (teczki), reports (zgłoszenia, bez tożsamości), similar_posting_pairs (podobieństwa) i appeals (odwołania).",
         "zapisuje": "Decyzje trafiają do moderator_decisions.",
-        "uruchamia": "Decyzja budzi Kierownika zgłoszeń, Rzecznika i Statystyka do ponownego przeliczenia.",
+        "uruchamia": "Decyzja budzi Oceniacza wiarygodności zgłoszeń, Publikatora Trust Score i Wyliczacza sygnałów o firmach do ponownego przeliczenia.",
     },
     "iod": {
         "kim": "IOD, czyli Inspektor Ochrony Danych, to osoba pilnująca, żebyśmy przestrzegali RODO. Jak inspektor BHP, tylko od danych osobowych.",
@@ -455,12 +455,12 @@ ROLES = {
             "Przeglądać dziennik audytu: kto czytał dane osobowe.",
         ],
         "korzysta": "Czyta privacy_requests (wnioski RODO), consents (zgody) i audit_log (dziennik audytu).",
-        "zapisuje": "Rejestruje wnioski przez Urzędnika RODO w privacy_requests.",
-        "uruchamia": "Może ręcznie uruchomić Urzędnika RODO i Rzecznika prasowego (pakiet dla instytucji).",
+        "zapisuje": "Rejestruje wnioski przez Realizatora wniosków RODO w privacy_requests.",
+        "uruchamia": "Może ręcznie uruchomić Realizatora wniosków RODO i Generatora raportów publicznych (pakiet dla instytucji).",
         "skroty": "IOD – Inspektor Ochrony Danych. RODO – przepisy o ochronie danych osobowych.",
     },
-    "informator": {
-        "kim": "Informator jest jak punkt informacji w galerii handlowej: gdy kandydat otwiera ofertę, widżet pyta go „co wiesz o tej firmie?”, a on szybko odpowiada odznaką.",
+    "wyswietlacz-odznak": {
+        "kim": "Wyświetlacz odznak zaufania jest jak punkt informacji w galerii handlowej: gdy kandydat otwiera ofertę, widżet pyta go „co wiesz o tej firmie?”, a on szybko odpowiada odznaką.",
         "zadania": [
             "Ustalić, do której firmy należy oferta (przez konto na platformie).",
             "Pobrać opublikowany wynik firmy albo „za mało danych”.",
@@ -471,8 +471,8 @@ ROLES = {
         "zapisuje": "Jest właścicielem badge_view_stats (dzienne liczniki wyświetleń odznak).",
         "uruchamia": "Budzi go widżet trust_badge.js przy każdym otwarciu oferty.",
     },
-    "okienko": {
-        "kim": "Okienko dla firm to strona-okienko obsługi klienta dla pracodawców. Tu firma widzi, za co ma taką ocenę, i może złożyć reklamację.",
+    "przyjmowacz-odwolan": {
+        "kim": "Przyjmowacz odwołań firm to strona-okienko obsługi klienta dla pracodawców. Tu firma widzi, za co ma taką ocenę, i może złożyć reklamację.",
         "zadania": [
             "Pokazać firmie wynik, powody i rodziny jej ogłoszeń.",
             "Przyjąć odwołanie z rodzajem, treścią i załącznikami.",
@@ -480,10 +480,10 @@ ROLES = {
         ],
         "korzysta": "Czyta published_trust_scores (opublikowane wyniki), employer_signals (sygnały firm), posting_families (rodziny ogłoszeń), employers (pracodawcy) i moderator_decisions (decyzje moderatorów).",
         "zapisuje": "Jest właścicielem appeals (odwołania firm).",
-        "uruchamia": "Uruchamia go pracodawca. Odwołanie budzi Asystenta śledczego i trafia do kolejki moderatora.",
+        "uruchamia": "Uruchamia go pracodawca. Odwołanie budzi Kompletowacza teczek spraw i trafia do kolejki moderatora.",
     },
-    "biurko": {
-        "kim": "Biurko moderatora to stanowisko pracy człowieka-moderatora: na biurku leży kolejka spraw, a obok każdej teczka z dowodami.",
+    "zapisywacz-decyzji": {
+        "kim": "Zapisywacz decyzji moderatora to stanowisko pracy człowieka-moderatora: na biurku leży kolejka spraw, a obok każdej teczka z dowodami.",
         "zadania": [
             "Pokazać wszystkie sprawy czekające na decyzję człowieka.",
             "Pokazać teczkę, zgłoszenia (bez tożsamości) i podobieństwa ogłoszeń.",
@@ -491,30 +491,30 @@ ROLES = {
         ],
         "korzysta": "Czyta moderation_queue (kolejka moderacji – widok), case_files (teczki), reports (zgłoszenia), similar_posting_pairs (pary podobnych) i appeals (odwołania).",
         "zapisuje": "Jest właścicielem moderator_decisions (decyzje moderatorów).",
-        "uruchamia": "Uruchamia go moderator. Każda decyzja budzi Kierownika zgłoszeń, Rzecznika i Statystyka.",
+        "uruchamia": "Uruchamia go moderator. Każda decyzja budzi Oceniacza wiarygodności zgłoszeń, Publikatora Trust Score i Wyliczacza sygnałów o firmach.",
     },
-    "urzednik-rodo": {
-        "kim": "Urzędnik RODO obsługuje wnioski kandydatów o ich dane – np. „pokażcie, co o mnie macie” albo „usuńcie mnie”. Nie kasuje sam, tylko rozsyła polecenia do właścicieli zbiorów, bo do każdego zbioru może pisać tylko jego właściciel.",
+    "realizator-rodo": {
+        "kim": "Realizator wniosków RODO obsługuje wnioski kandydatów o ich dane – np. „pokażcie, co o mnie macie” albo „usuńcie mnie”. Nie kasuje sam, tylko rozsyła polecenia do właścicieli zbiorów, bo do każdego zbioru może pisać tylko jego właściciel.",
         "zadania": [
             "Przyjąć wniosek przekazany przez platformę (tylko ona wie, kim jest kandydat).",
             "Znaleźć, które zbiory mają dane tego pseudonimu.",
-            "Rozesłać zlecenia usunięcia do właścicieli: Kancelarii, Bramkarza, Kierownika, Rejestratora aplikacji, Daktyloskopa, Notariusza zgód i Sekretarki.",
+            "Rozesłać zlecenia usunięcia do właścicieli: Przyjmowacza zgłoszeń kandydatów, Odsiewacza botów, Oceniacza wiarygodności zgłoszeń, Importera logu aplikacji, Porównywacza odcisków urządzeń, Rejestratora zgód kandydatów i Wysyłacza przypomnień.",
             "Zapisać, że wniosek wykonano (bez treści usuniętych danych).",
         ],
         "korzysta": "Czyta consents (zgody) i – tylko do odczytu – zbiory z pseudonimem kandydata.",
         "zapisuje": "Jest właścicielem privacy_requests (wnioski RODO).",
-        "uruchamia": "Budzi go platforma albo IOD. On budzi właścicieli zbiorów, a po usunięciu Statystyka, żeby przeliczył sygnały.",
+        "uruchamia": "Budzi go platforma albo IOD. On budzi właścicieli zbiorów, a po usunięciu Wyliczacza sygnałów o firmach, żeby przeliczył sygnały.",
         "skroty": "RODO – przepisy o ochronie danych osobowych; daje każdemu prawo wglądu i usunięcia swoich danych.",
     },
-    "rzecznik-prasowy": {
-        "kim": "Rzecznik prasowy przygotowuje raporty o rynku pracy dla mediów, PIP i badaczy. Mówi tylko liczbami zbiorczymi – nigdy o konkretnych kandydatach.",
+    "generator-raportow": {
+        "kim": "Generator raportów publicznych przygotowuje raporty o rynku pracy dla mediów, PIP i badaczy. Mówi tylko liczbami zbiorczymi – nigdy o konkretnych kandydatach.",
         "zadania": [
             "Regularnie robić zestawienia, np. odsetek ofert widmowych w branży.",
             "Na wniosek instytucji przygotować pakiet dowodowy o firmie (bez danych kandydatów).",
         ],
         "korzysta": "Czyta employer_signals (sygnały firm), posting_lifecycles (cykle życia), published_trust_scores (opublikowane wyniki) i badge_view_stats (liczniki wyświetleń).",
         "zapisuje": "Jest właścicielem public_reports (raporty publiczne).",
-        "uruchamia": "Budzi go Zegar albo IOD.",
+        "uruchamia": "Budzi go Uruchamiacz zadań cyklicznych albo IOD.",
         "skroty": "PIP – Państwowa Inspekcja Pracy.",
     },
     # ───────────── WARSTWA 6 – ZAPLECZE ─────────────
@@ -526,13 +526,13 @@ ROLES = {
             "Podłączać nowe platformy i wydawać im klucze API.",
             "Zakładać konta personelu i nadawać role.",
         ],
-        "korzysta": "Przez Biuro administratora czyta job_runs (dziennik uruchomień), system_alerts (alerty), llm_usage_log (koszty AI) i audit_log (dziennik audytu – tylko odczyt).",
-        "zapisuje": "Przez Biuro administratora zapisuje system_parameters, słowniki, partners, api_keys i staff_accounts.",
+        "korzysta": "Przez Edytor ustawień systemu czyta job_runs (dziennik uruchomień), system_alerts (alerty), llm_usage_log (koszty AI) i audit_log (dziennik audytu – tylko odczyt).",
+        "zapisuje": "Przez Edytor ustawień systemu zapisuje system_parameters, słowniki, partners, api_keys i staff_accounts.",
         "uruchamia": "Zmiana parametrów wpływa na wszystkie programy, a każda zmiana trafia do dziennika audytu.",
         "skroty": "API – „okienko” programu do wymiany danych. Klucz API – hasło, po którym rozpoznajemy partnera.",
     },
-    "portier": {
-        "kim": "Portier stoi przy jedynych drzwiach do naszego budynku. Każde zapytanie z zewnątrz – od platformy czy z widżetu – najpierw pokazuje mu przepustkę. Na mapie to przerywana linia „Brama API”.",
+    "kontroler-kluczy-api": {
+        "kim": "Kontroler kluczy API stoi przy jedynych drzwiach do naszego budynku. Każde zapytanie z zewnątrz – od platformy czy z widżetu – najpierw pokazuje mu przepustkę. Na mapie to przerywana linia „Brama API”.",
         "zadania": [
             "Sprawdzić klucz API partnera albo domenę, z której przyszło zapytanie widżetu.",
             "Pilnować limitów, żeby nikt nie zalał nas tysiącami zapytań.",
@@ -541,25 +541,25 @@ ROLES = {
         ],
         "korzysta": "Czyta partners (podłączone platformy) i api_keys (klucze API).",
         "zapisuje": "Jest właścicielem api_access_log (log zapytań do API).",
-        "uruchamia": "Budzi go każde zapytanie z zewnątrz. Przekazuje je np. Rejestratorowi kont, Przyjmującemu ogłoszenia, Kancelarii czy Informatorowi.",
+        "uruchamia": "Budzi go każde zapytanie z zewnątrz. Przekazuje je np. Importerowi kont firm, Importerowi ogłoszeń, Przyjmowacza zgłoszeń kandydatów czy Wyświetlaczowi odznak zaufania.",
         "skroty": "Brama API (API gateway) – jeden punkt wejścia do systemu. Domena – adres strony, np. pracuj.pl.",
     },
-    "biuro-admina": {
-        "kim": "Biuro administratora to strona, na której administrator zmienia ustawienia systemu – jak pulpit sterowniczy.",
+    "edytor-ustawien": {
+        "kim": "Edytor ustawień systemu to strona, na której administrator zmienia ustawienia systemu – jak pulpit sterowniczy.",
         "zadania": [
             "Pozwolić zmieniać parametry, słowniki, partnerów, klucze i konta personelu.",
-            "Każdą zmianę zgłosić Protokolantowi do dziennika audytu.",
+            "Każdą zmianę zgłosić Zapisywaczowi dziennika audytu.",
             "Pokazać administratorowi stan systemu: uruchomienia, alerty, koszty AI.",
         ],
         "korzysta": "Czyta job_runs (dziennik uruchomień), system_alerts (alerty techniczne), llm_usage_log (koszty AI) i audit_log (dziennik audytu).",
         "zapisuje": "Jest właścicielem system_parameters (parametry), partners (platformy), api_keys (klucze), staff_accounts (konta personelu) i słowników: boilerplate_patterns, legal_form_dictionary, seniority_dictionary, skills_dictionary.",
         "uruchamia": "Uruchamia go administrator. Zmiany parametrów działają we wszystkich programach.",
     },
-    "zegar": {
-        "kim": "Zegar to budzik całego systemu. Sam nie pracuje – tylko o ustalonych porach budzi innych, np. „Statystyk, czas policzyć sygnały”.",
+    "uruchamiacz-zadan": {
+        "kim": "Uruchamiacz zadań cyklicznych to budzik całego systemu. Sam nie pracuje – tylko o ustalonych porach budzi innych, np. „Wyliczacz sygnałów o firmach, czas policzyć sygnały”.",
         "zadania": [
             "Odczytać harmonogram z parametrów systemu.",
-            "O ustalonej porze obudzić właściwy program (np. Statystyka, Sekretarkę, Analityka nadużyć, Sprzątacza, Archiwistę).",
+            "O ustalonej porze obudzić właściwy program (np. Wyliczacza sygnałów o firmach, Wysyłacza przypomnień, Wykrywacza kampanii zgłoszeń, Usuwacza przeterminowanych danych, Twórcę kopii zapasowych).",
             "Zapisać, co uruchomił, kiedy i z jakim skutkiem.",
         ],
         "korzysta": "Czyta system_parameters (harmonogram).",
@@ -567,8 +567,8 @@ ROLES = {
         "uruchamia": "Budzi go upływ czasu. Uruchamia wiele programów z różnych warstw.",
         "skroty": "Harmonogram (scheduler) – lista zadań z godzinami ich uruchomienia.",
     },
-    "straznik": {
-        "kim": "Strażnik obchodzi budynek i sprawdza, czy wszystko działa – jak dozorca nocny, który dzwoni do kierownika, gdy coś się pali.",
+    "obserwator-systemu": {
+        "kim": "Obserwator stanu systemu obchodzi budynek i sprawdza, czy wszystko działa – jak dozorca nocny, który dzwoni do kierownika, gdy coś się pali.",
         "zadania": [
             "Sprawdzać, czy programy się uruchamiają i kończą bez błędów.",
             "Pilnować, czy kolejka zleceń nie rośnie (co znaczy, że któryś program stanął).",
@@ -577,12 +577,12 @@ ROLES = {
         ],
         "korzysta": "Czyta job_runs (dziennik uruchomień), task_queue (kolejka zleceń) i api_access_log (log zapytań).",
         "zapisuje": "Jest właścicielem system_alerts (alerty techniczne).",
-        "uruchamia": "Budzi go Zegar. Alerty widzi administrator w Biurze administratora.",
+        "uruchamia": "Budzi go Uruchamiacz zadań cyklicznych. Alerty widzi administrator w Edytorze ustawień systemu.",
     },
-    "lacznik": {
-        "kim": "Łącznik z AI to jedyne drzwi do płatnego modelu AI – jak kasjer, który pilnuje wydatków i pamięta, o co już pytaliśmy.",
+    "posrednik-ai": {
+        "kim": "Pośrednik zapytań do AI to jedyne drzwi do płatnego modelu AI – jak kasjer, który pilnuje wydatków i pamięta, o co już pytaliśmy.",
         "zadania": [
-            "Przyjmować zapytania do AI od Analityka wymagań, Wektoryzatora i Asystenta śledczego.",
+            "Przyjmować zapytania do AI od Ekstraktora wymagań z ogłoszeń, Zamieniacza ogłoszeń na wektory i Kompletowacza teczek spraw.",
             "Sprawdzić, czy ta sama treść była już pytana – wtedy oddać odpowiedź z pamięci, bez drugiej opłaty.",
             "Zapisać nową odpowiedź i jej koszt.",
         ],
@@ -591,8 +591,8 @@ ROLES = {
         "uruchamia": "Budzą go programy warstw 2 i 4. Sam pyta zewnętrzny model AI.",
         "skroty": "Cache – podręczna pamięć wyników, żeby nie liczyć dwa razy tego samego. LLM – duży model językowy.",
     },
-    "protokolant": {
-        "kim": "Protokolant spisuje protokół z wszystkiego, co ważne – jak protokolant w sądzie. Jego zapisów nikt nie może zmienić, nawet administrator.",
+    "zapisywacz-audytu": {
+        "kim": "Zapisywacz dziennika audytu spisuje protokół z wszystkiego, co ważne – jak protokolant w sądzie. Jego zapisów nikt nie może zmienić, nawet administrator.",
         "zadania": [
             "Zapisać, kto (człowiek albo program) i kiedy czytał dane osobowe.",
             "Zapisać każdą zmianę wyniku, parametru albo decyzji.",
@@ -603,19 +603,19 @@ ROLES = {
         "uruchamia": "Budzi go każdy program, który robi coś ważnego. Dziennik czytają IOD i administrator.",
         "skroty": "Audyt – sprawdzenie, czy wszystko działo się zgodnie z zasadami.",
     },
-    "sprzatacz": {
-        "kim": "Sprzątacz pilnuje terminów przechowywania danych. Nie wyrzuca niczego sam – mówi właścicielom szaf: „te papiery są już po terminie, zniszczcie je”.",
+    "usuwacz-danych": {
+        "kim": "Usuwacz przeterminowanych danych pilnuje terminów przechowywania danych. Nie wyrzuca niczego sam – mówi właścicielom szaf: „te papiery są już po terminie, zniszczcie je”.",
         "zadania": [
             "Sprawdzać daty w zbiorach i porównywać je z terminami z parametrów.",
             "Wysyłać właścicielom zbiorów zlecenia usunięcia albo zanonimizowania starych danych.",
         ],
         "korzysta": "Czyta system_parameters (terminy przechowywania) i daty w zbiorach.",
         "zapisuje": "Nic – usuwają właściciele zbiorów.",
-        "uruchamia": "Budzi go Zegar. On budzi właścicieli zbiorów.",
+        "uruchamia": "Budzi go Uruchamiacz zadań cyklicznych. On budzi właścicieli zbiorów.",
         "skroty": "Anonimizacja – usunięcie z danych wszystkiego, co pozwala rozpoznać osobę.",
     },
-    "archiwista": {
-        "kim": "Archiwista robi kopie zapasowe całej bazy i zamyka je w sejfie (szyfruje). Stare kopie same wygasają, żeby dane usunięte na wniosek RODO znikały też z kopii.",
+    "tworca-kopii": {
+        "kim": "Twórca kopii zapasowych robi kopie zapasowe całej bazy i zamyka je w sejfie (szyfruje). Stare kopie same wygasają, żeby dane usunięte na wniosek RODO znikały też z kopii.",
         "zadania": [
             "Regularnie robić zaszyfrowaną kopię bazy.",
             "Nadawać każdej kopii datę wygaśnięcia i usuwać kopie po terminie.",
@@ -623,7 +623,7 @@ ROLES = {
         ],
         "korzysta": "Czyta całą bazę (tylko do zrobienia kopii).",
         "zapisuje": "Jest właścicielem backups (kopie zapasowe).",
-        "uruchamia": "Budzi go Zegar.",
+        "uruchamia": "Budzi go Uruchamiacz zadań cyklicznych.",
         "skroty": "Backup – kopia zapasowa. Szyfrowanie – zamiana danych na nieczytelne bez klucza.",
     },
 }

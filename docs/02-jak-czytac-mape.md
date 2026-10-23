@@ -8,7 +8,7 @@
    - Niebieski – nasz program.
    - Pomarańczowy – zbiór danych, czyli przyszła tabela w SQL. „(widok)” to zapytanie liczone na żywo, nie osobna tabela.
 
-3. **Przerywana linia to Brama API.** Wszystko z zewnątrz przechodzi najpierw przez jeden program – Portiera, który sprawdza klucz partnera i pilnuje limitów zapytań.
+3. **Przerywana linia to Brama API.** Wszystko z zewnątrz przechodzi najpierw przez jeden program – Kontrolera kluczy API, który sprawdza klucz partnera i pilnuje limitów zapytań.
 
 4. **Każdy wiersz to jedna warstwa, czytana od lewej do prawej:** źródło danych → dział (grupa naszych programów) → zbiory, które ten dział zapisuje. Strzałka do zbioru oznacza zapis.
 
