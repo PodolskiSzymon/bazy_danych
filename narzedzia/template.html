@@ -259,7 +259,16 @@ html.locked { overflow: hidden; }
   }));
 
   const names = [...storeKey.keys(), ...Object.keys(DATA.aux)].sort((a, b) => b.length - a.length);
-  const nameRe = new RegExp('\\b(' + names.join('|') + ')\\b', 'g');
+  // Nazwy programów w opisach bywają odmienione („Weryfikatorowi firm w rejestrach”),
+  // więc pierwsze słowo dopasowujemy z dowolną końcówką, a resztę dosłownie.
+  const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const progPatterns = [];
+  DATA.layers.forEach(L => L.programs.forEach(p => {
+    const [head, ...rest] = p.name.replace(/ \(.*\)$/, '').split(' ');
+    const src = reEsc(head.replace(/a$/, '')) + '\\p{L}*' + rest.map(w => ' ' + reEsc(w)).join('');
+    progPatterns.push({ key: p.key, src, re: new RegExp('^' + src + '$', 'u') });
+  }));
+  const nameRe = new RegExp('(?<![\\p{L}_])(' + [...names, ...progPatterns.map(p => p.src)].join('|') + ')(?![\\p{L}_])', 'gu');
 
   function datasetChip(name, inline) {
     const cls = inline ? 'ref' : 'chip';
@@ -277,7 +286,10 @@ html.locked { overflow: hidden; }
   function linkify(text) {
     let out = '', last = 0;
     text.replace(nameRe, (m, _g, idx) => {
-      out += esc(text.slice(last, idx)) + datasetChip(m, true);
+      const prog = storeKey.has(m) || DATA.aux[m] ? null : progPatterns.find(p => p.re.test(m));
+      out += esc(text.slice(last, idx)) + (prog
+        ? `<button type="button" class="ref k-prog" data-open="${esc(prog.key)}">${esc(m)}</button>`
+        : datasetChip(m, true));
       last = idx + m.length;
       return m;
     });
@@ -391,7 +403,7 @@ html.locked { overflow: hidden; }
       </header>
       ${band(L.band1, L.sources)}
       <p class="band-arrow">↓ ${esc(L.arrow1)}</p>
-      ${band('Programy warstwy – nasi „pracownicy”', L.programs)}
+      ${band('Programy warstwy', L.programs)}
       <p class="band-arrow">↓ programy zapisują wyniki w zbiorach</p>
       ${band('Zbiory, które warstwa zapisuje (przyszłe tabele)', L.stores)}
       <p class="note">${linkify(L.note)}</p>
@@ -410,7 +422,7 @@ html.locked { overflow: hidden; }
     if (it.kind === 'prog') {
       rels += relRow('Czyta', it.reads.map(d => datasetChip(d)).join(''), 'nic – dostaje zlecenia albo odpowiedzi innych programów');
       rels += relRow('Zapisuje', it.writes.map(d => datasetChip(d)).join(''), 'nic – wynik oddaje innemu programowi');
-      rels += '<p class="hint">W bazie ten program loguje się jak osobny pracownik: ma własne konto i prawo zapisu tylko do swoich zbiorów.</p>';
+      rels += '<p class="hint">W bazie ten program ma własne konto użytkownika z prawem zapisu tylko do swoich zbiorów.</p>';
     } else if (it.kind === 'store') {
       const table = it.name.replace(' (widok)', '');
       if (it.viewOf) {
@@ -429,11 +441,11 @@ html.locked { overflow: hidden; }
       <section class="role k-${it.kind}" aria-labelledby="role-h">
         <h3 id="role-h">Rola</h3>
         <p class="role-lead">${linkify(r.kim)}</p>
-        <h4>Co ma na celu – zadania tej roli</h4>
+        <h4>Co robi – krok po kroku</h4>
         <ol>${r.zadania.map(z => `<li>${linkify(z)}</li>`).join('')}</ol>
-        <h4>Z jakich zbiorów korzysta</h4><p>${linkify(r.korzysta)}</p>
+        <h4>Z jakich zbiorów czyta</h4><p>${linkify(r.korzysta)}</p>
         <h4>Do jakich zbiorów zapisuje</h4><p>${linkify(r.zapisuje)}</p>
-        <h4>Kogo uruchamia i kto uruchamia jego</h4><p>${linkify(r.uruchamia)}</p>
+        <h4>Kto go uruchamia i komu przekazuje pracę</h4><p>${linkify(r.uruchamia)}</p>
         ${r.skroty ? `<h4>Skróty i trudne słowa</h4><p>${linkify(r.skroty)}</p>` : ''}
       </section>`;
     panelBody.innerHTML = `
