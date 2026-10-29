@@ -3,19 +3,19 @@
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
-CREATE TABLE MatchMethod (
+CREATE TABLE ORG07_MatchMethod (
     MatchMethodKey   NUMBER(2)     NOT NULL,
     MatchMethodName  VARCHAR2(40)  NOT NULL
 );
 
-CREATE TABLE LinkEvidence (
+CREATE TABLE ORG07_LinkEvidence (
     LinkEvidenceKey         NUMBER(10)     NOT NULL,
     AccountEmployerLinkKey  NUMBER(9)      NOT NULL,
     EvidenceTypeKey         NUMBER(2)      NOT NULL,
     EvidenceValue           VARCHAR2(250)  NOT NULL
 );
 
-CREATE TABLE AccountEmployerLink (
+CREATE TABLE ORG07_AccountEmployerLink (
     AccountEmployerLinkKey  NUMBER(9)    NOT NULL,
     EmployerAccountKey      NUMBER(8)    NOT NULL,
     EmployerKey             NUMBER(8)    NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE AccountEmployerLink (
     UnlinkedAt              TIMESTAMP
 );
 
-CREATE TABLE AgencyClient (
+CREATE TABLE ORG07_AgencyClient (
     AgencyClientKey    NUMBER(8)  NOT NULL,
     AgencyEmployerKey  NUMBER(8)  NOT NULL,
     ClientEmployerKey  NUMBER(8)  NOT NULL,
@@ -33,12 +33,12 @@ CREATE TABLE AgencyClient (
     ValidTo            DATE
 );
 
-CREATE TABLE EvidenceType (
+CREATE TABLE ORG07_EvidenceType (
     EvidenceTypeKey   NUMBER(2)     NOT NULL,
     EvidenceTypeName  VARCHAR2(40)  NOT NULL
 );
 
-CREATE TABLE LinkChange (
+CREATE TABLE ORG07_LinkChange (
     LinkChangeKey           NUMBER(10)     NOT NULL,
     AccountEmployerLinkKey  NUMBER(9)      NOT NULL,
     LinkChangeTypeKey       NUMBER(2)      NOT NULL,
@@ -46,85 +46,85 @@ CREATE TABLE LinkChange (
     ChangeReason            VARCHAR2(300)
 );
 
-CREATE TABLE LinkChangeType (
+CREATE TABLE ORG07_LinkChangeType (
     LinkChangeTypeKey   NUMBER(2)     NOT NULL,
     LinkChangeTypeName  VARCHAR2(40)  NOT NULL
 );
 
-COMMENT ON TABLE MatchMethod IS 'Sposób, w jaki dopasowaliśmy konto do firmy.';
-COMMENT ON COLUMN MatchMethod.MatchMethodKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN MatchMethod.MatchMethodName IS 'Nazwa sposobu dopasowania';
+COMMENT ON TABLE ORG07_MatchMethod IS 'Sposób, w jaki dopasowaliśmy konto do firmy.';
+COMMENT ON COLUMN ORG07_MatchMethod.MatchMethodKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_MatchMethod.MatchMethodName IS 'Nazwa sposobu dopasowania';
 
-COMMENT ON TABLE LinkEvidence IS 'Dowód, na którym opiera się powiązanie.';
-COMMENT ON COLUMN LinkEvidence.LinkEvidenceKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN LinkEvidence.AccountEmployerLinkKey IS 'Powiązanie';
-COMMENT ON COLUMN LinkEvidence.EvidenceTypeKey IS 'Rodzaj dowodu';
-COMMENT ON COLUMN LinkEvidence.EvidenceValue IS 'Treść dowodu, np. „ten sam NIP w koncie i w KRS”';
+COMMENT ON TABLE ORG07_LinkEvidence IS 'Dowód, na którym opiera się powiązanie.';
+COMMENT ON COLUMN ORG07_LinkEvidence.LinkEvidenceKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_LinkEvidence.AccountEmployerLinkKey IS 'Powiązanie';
+COMMENT ON COLUMN ORG07_LinkEvidence.EvidenceTypeKey IS 'Rodzaj dowodu';
+COMMENT ON COLUMN ORG07_LinkEvidence.EvidenceValue IS 'Treść dowodu, np. „ten sam NIP w koncie i w KRS”';
 
-COMMENT ON TABLE AccountEmployerLink IS 'Powiązanie konta na platformie z firmą z rejestru.';
-COMMENT ON COLUMN AccountEmployerLink.AccountEmployerLinkKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN AccountEmployerLink.EmployerAccountKey IS 'Konto';
-COMMENT ON COLUMN AccountEmployerLink.EmployerKey IS 'Firma';
-COMMENT ON COLUMN AccountEmployerLink.MatchMethodKey IS 'Sposób dopasowania';
-COMMENT ON COLUMN AccountEmployerLink.MatchConfidence IS 'Pewność od 0 do 1';
-COMMENT ON COLUMN AccountEmployerLink.LinkedAt IS 'Kiedy połączono';
-COMMENT ON COLUMN AccountEmployerLink.UnlinkedAt IS 'Kiedy cofnięto (puste = obowiązuje)';
+COMMENT ON TABLE ORG07_AccountEmployerLink IS 'Powiązanie konta na platformie z firmą z rejestru.';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.AccountEmployerLinkKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.EmployerAccountKey IS 'Konto';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.EmployerKey IS 'Firma';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.MatchMethodKey IS 'Sposób dopasowania';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.MatchConfidence IS 'Pewność od 0 do 1';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.LinkedAt IS 'Kiedy połączono';
+COMMENT ON COLUMN ORG07_AccountEmployerLink.UnlinkedAt IS 'Kiedy cofnięto (puste = obowiązuje)';
 
-COMMENT ON TABLE AgencyClient IS 'Agencja rekrutacyjna i firma, dla której rekrutuje – dwa klucze do tej samej tabeli.';
-COMMENT ON COLUMN AgencyClient.AgencyClientKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN AgencyClient.AgencyEmployerKey IS 'Agencja rekrutacyjna';
-COMMENT ON COLUMN AgencyClient.ClientEmployerKey IS 'Firma, dla której agencja rekrutuje';
-COMMENT ON COLUMN AgencyClient.ValidFrom IS 'Od kiedy';
-COMMENT ON COLUMN AgencyClient.ValidTo IS 'Do kiedy (puste = nadal)';
+COMMENT ON TABLE ORG07_AgencyClient IS 'Agencja rekrutacyjna i firma, dla której rekrutuje – dwa klucze do tej samej tabeli.';
+COMMENT ON COLUMN ORG07_AgencyClient.AgencyClientKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_AgencyClient.AgencyEmployerKey IS 'Agencja rekrutacyjna';
+COMMENT ON COLUMN ORG07_AgencyClient.ClientEmployerKey IS 'Firma, dla której agencja rekrutuje';
+COMMENT ON COLUMN ORG07_AgencyClient.ValidFrom IS 'Od kiedy';
+COMMENT ON COLUMN ORG07_AgencyClient.ValidTo IS 'Do kiedy (puste = nadal)';
 
-COMMENT ON TABLE EvidenceType IS 'Rodzaj dowodu powiązania.';
-COMMENT ON COLUMN EvidenceType.EvidenceTypeKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN EvidenceType.EvidenceTypeName IS 'Nazwa rodzaju dowodu';
+COMMENT ON TABLE ORG07_EvidenceType IS 'Rodzaj dowodu powiązania.';
+COMMENT ON COLUMN ORG07_EvidenceType.EvidenceTypeKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_EvidenceType.EvidenceTypeName IS 'Nazwa rodzaju dowodu';
 
-COMMENT ON TABLE LinkChange IS 'Zmiana powiązania – historia połączeń i rozłączeń.';
-COMMENT ON COLUMN LinkChange.LinkChangeKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN LinkChange.AccountEmployerLinkKey IS 'Powiązanie';
-COMMENT ON COLUMN LinkChange.LinkChangeTypeKey IS 'Co zmieniono';
-COMMENT ON COLUMN LinkChange.ChangedAt IS 'Kiedy';
-COMMENT ON COLUMN LinkChange.ChangeReason IS 'Dlaczego';
+COMMENT ON TABLE ORG07_LinkChange IS 'Zmiana powiązania – historia połączeń i rozłączeń.';
+COMMENT ON COLUMN ORG07_LinkChange.LinkChangeKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_LinkChange.AccountEmployerLinkKey IS 'Powiązanie';
+COMMENT ON COLUMN ORG07_LinkChange.LinkChangeTypeKey IS 'Co zmieniono';
+COMMENT ON COLUMN ORG07_LinkChange.ChangedAt IS 'Kiedy';
+COMMENT ON COLUMN ORG07_LinkChange.ChangeReason IS 'Dlaczego';
 
-COMMENT ON TABLE LinkChangeType IS 'Rodzaj zmiany powiązania.';
-COMMENT ON COLUMN LinkChangeType.LinkChangeTypeKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN LinkChangeType.LinkChangeTypeName IS 'Nazwa rodzaju zmiany';
+COMMENT ON TABLE ORG07_LinkChangeType IS 'Rodzaj zmiany powiązania.';
+COMMENT ON COLUMN ORG07_LinkChangeType.LinkChangeTypeKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG07_LinkChangeType.LinkChangeTypeName IS 'Nazwa rodzaju zmiany';
 
-ALTER TABLE MatchMethod ADD CONSTRAINT MatchMethod_PK PRIMARY KEY (MatchMethodKey);
-ALTER TABLE MatchMethod ADD CONSTRAINT MatchMethod_MatchMethodName_UN UNIQUE (MatchMethodName);
-ALTER TABLE LinkEvidence ADD CONSTRAINT LinkEvidence_PK PRIMARY KEY (LinkEvidenceKey);
-ALTER TABLE AccountEmployerLink ADD CONSTRAINT AccountEmployerLink_PK PRIMARY KEY (AccountEmployerLinkKey);
-ALTER TABLE AccountEmployerLink ADD CONSTRAINT AccountEmployerLink_CK1 CHECK (MatchConfidence BETWEEN 0 AND 1);
-ALTER TABLE AccountEmployerLink ADD CONSTRAINT AccountEmployerLink_CK2 CHECK (UnlinkedAt IS NULL OR UnlinkedAt >= LinkedAt);
-ALTER TABLE AgencyClient ADD CONSTRAINT AgencyClient_PK PRIMARY KEY (AgencyClientKey);
-ALTER TABLE AgencyClient ADD CONSTRAINT AgencyClient_UN UNIQUE (AgencyEmployerKey, ClientEmployerKey, ValidFrom);
-ALTER TABLE AgencyClient ADD CONSTRAINT AgencyClient_CK1 CHECK (AgencyEmployerKey <> ClientEmployerKey);
-ALTER TABLE EvidenceType ADD CONSTRAINT EvidenceType_PK PRIMARY KEY (EvidenceTypeKey);
-ALTER TABLE EvidenceType ADD CONSTRAINT EvidenceType_EvidenceTypeName_UN UNIQUE (EvidenceTypeName);
-ALTER TABLE LinkChange ADD CONSTRAINT LinkChange_PK PRIMARY KEY (LinkChangeKey);
-ALTER TABLE LinkChangeType ADD CONSTRAINT LinkChangeType_PK PRIMARY KEY (LinkChangeTypeKey);
-ALTER TABLE LinkChangeType ADD CONSTRAINT LinkChangeType_LinkChangeTypeName_UN UNIQUE (LinkChangeTypeName);
+ALTER TABLE ORG07_MatchMethod ADD CONSTRAINT ORG07_MatchMethod_PK PRIMARY KEY (MatchMethodKey);
+ALTER TABLE ORG07_MatchMethod ADD CONSTRAINT ORG07_MatchMethod_MatchMethodName_UN UNIQUE (MatchMethodName);
+ALTER TABLE ORG07_LinkEvidence ADD CONSTRAINT ORG07_LinkEvidence_PK PRIMARY KEY (LinkEvidenceKey);
+ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_PK PRIMARY KEY (AccountEmployerLinkKey);
+ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_CK1 CHECK (MatchConfidence BETWEEN 0 AND 1);
+ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_CK2 CHECK (UnlinkedAt IS NULL OR UnlinkedAt >= LinkedAt);
+ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_PK PRIMARY KEY (AgencyClientKey);
+ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_UN UNIQUE (AgencyEmployerKey, ClientEmployerKey, ValidFrom);
+ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_CK1 CHECK (AgencyEmployerKey <> ClientEmployerKey);
+ALTER TABLE ORG07_EvidenceType ADD CONSTRAINT ORG07_EvidenceType_PK PRIMARY KEY (EvidenceTypeKey);
+ALTER TABLE ORG07_EvidenceType ADD CONSTRAINT ORG07_EvidenceType_EvidenceTypeName_UN UNIQUE (EvidenceTypeName);
+ALTER TABLE ORG07_LinkChange ADD CONSTRAINT ORG07_LinkChange_PK PRIMARY KEY (LinkChangeKey);
+ALTER TABLE ORG07_LinkChangeType ADD CONSTRAINT ORG07_LinkChangeType_PK PRIMARY KEY (LinkChangeTypeKey);
+ALTER TABLE ORG07_LinkChangeType ADD CONSTRAINT ORG07_LinkChangeType_LinkChangeTypeName_UN UNIQUE (LinkChangeTypeName);
 
-ALTER TABLE LinkEvidence ADD CONSTRAINT LinkEvidence_AccountEmployerLink_FK FOREIGN KEY (AccountEmployerLinkKey) REFERENCES AccountEmployerLink (AccountEmployerLinkKey);
-ALTER TABLE LinkEvidence ADD CONSTRAINT LinkEvidence_EvidenceType_FK FOREIGN KEY (EvidenceTypeKey) REFERENCES EvidenceType (EvidenceTypeKey);
-ALTER TABLE AccountEmployerLink ADD CONSTRAINT AccountEmployerLink_MatchMethod_FK FOREIGN KEY (MatchMethodKey) REFERENCES MatchMethod (MatchMethodKey);
-ALTER TABLE LinkChange ADD CONSTRAINT LinkChange_AccountEmployerLink_FK FOREIGN KEY (AccountEmployerLinkKey) REFERENCES AccountEmployerLink (AccountEmployerLinkKey);
-ALTER TABLE LinkChange ADD CONSTRAINT LinkChange_LinkChangeType_FK FOREIGN KEY (LinkChangeTypeKey) REFERENCES LinkChangeType (LinkChangeTypeKey);
+ALTER TABLE ORG07_LinkEvidence ADD CONSTRAINT ORG07_LinkEvidence_AccountEmployerLink_FK FOREIGN KEY (AccountEmployerLinkKey) REFERENCES ORG07_AccountEmployerLink (AccountEmployerLinkKey);
+ALTER TABLE ORG07_LinkEvidence ADD CONSTRAINT ORG07_LinkEvidence_EvidenceType_FK FOREIGN KEY (EvidenceTypeKey) REFERENCES ORG07_EvidenceType (EvidenceTypeKey);
+ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_MatchMethod_FK FOREIGN KEY (MatchMethodKey) REFERENCES ORG07_MatchMethod (MatchMethodKey);
+ALTER TABLE ORG07_LinkChange ADD CONSTRAINT ORG07_LinkChange_AccountEmployerLink_FK FOREIGN KEY (AccountEmployerLinkKey) REFERENCES ORG07_AccountEmployerLink (AccountEmployerLinkKey);
+ALTER TABLE ORG07_LinkChange ADD CONSTRAINT ORG07_LinkChange_LinkChangeType_FK FOREIGN KEY (LinkChangeTypeKey) REFERENCES ORG07_LinkChangeType (LinkChangeTypeKey);
 
 -- Przykładowe wiersze: w słownikach to warianty, o które pytaliśmy („jakie mogą być warianty?”).
-INSERT INTO MatchMethod (MatchMethodKey, MatchMethodName) VALUES (1, 'Ten sam NIP');
-INSERT INTO MatchMethod (MatchMethodKey, MatchMethodName) VALUES (2, 'Podobna nazwa i ta sama strona www');
-INSERT INTO MatchMethod (MatchMethodKey, MatchMethodName) VALUES (3, 'Decyzja moderatora');
-INSERT INTO MatchMethod (MatchMethodKey, MatchMethodName) VALUES (4, 'Potwierdzenie przez firmę');
-INSERT INTO EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (1, 'Zgodny NIP');
-INSERT INTO EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (2, 'Podobna nazwa');
-INSERT INTO EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (3, 'Ta sama domena strony www');
-INSERT INTO EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (4, 'Ten sam adres');
-INSERT INTO EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (5, 'Dokument przesłany przez firmę');
-INSERT INTO LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (1, 'Połączono');
-INSERT INTO LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (2, 'Rozłączono');
-INSERT INTO LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (3, 'Przeniesiono do innej firmy');
-INSERT INTO LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (4, 'Zmieniono pewność');
+INSERT INTO ORG07_MatchMethod (MatchMethodKey, MatchMethodName) VALUES (1, 'Ten sam NIP');
+INSERT INTO ORG07_MatchMethod (MatchMethodKey, MatchMethodName) VALUES (2, 'Podobna nazwa i ta sama strona www');
+INSERT INTO ORG07_MatchMethod (MatchMethodKey, MatchMethodName) VALUES (3, 'Decyzja moderatora');
+INSERT INTO ORG07_MatchMethod (MatchMethodKey, MatchMethodName) VALUES (4, 'Potwierdzenie przez firmę');
+INSERT INTO ORG07_EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (1, 'Zgodny NIP');
+INSERT INTO ORG07_EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (2, 'Podobna nazwa');
+INSERT INTO ORG07_EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (3, 'Ta sama domena strony www');
+INSERT INTO ORG07_EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (4, 'Ten sam adres');
+INSERT INTO ORG07_EvidenceType (EvidenceTypeKey, EvidenceTypeName) VALUES (5, 'Dokument przesłany przez firmę');
+INSERT INTO ORG07_LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (1, 'Połączono');
+INSERT INTO ORG07_LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (2, 'Rozłączono');
+INSERT INTO ORG07_LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (3, 'Przeniesiono do innej firmy');
+INSERT INTO ORG07_LinkChangeType (LinkChangeTypeKey, LinkChangeTypeName) VALUES (4, 'Zmieniono pewność');
 COMMIT;

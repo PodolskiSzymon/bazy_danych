@@ -15,8 +15,8 @@ Wypisać **wszystkie osoby** korzystające z infrastruktury i **wszystkie zbiory
 ## Uwagi prowadzącego po pierwszym mockupie
 - **Zacząć od źródła danych** – od platformy, która dostarcza dane. Jego przykład (Data Modeler): `SourcePlatform` (SourcePlatformKey NUMBER(2), SourcePlatformName VARCHAR2(30), MainHomePage VARCHAR2(50)) ← `PlatformAPI` (PlatformAPIKey, SourcePlatformKey, APITypeKey, DataFormatKey) → `APIType`, `DataFormat`; `PlatformAPIData` (PlatformAPIDataKey, PlatformAPIKey, DataName). Brakowało endpointów – dodaliśmy je.
 - **Każdy etap = wiele tabel relacyjnych, które działają razem** („organizm”). Przy każdej tabeli pytamy: **co to jest w szerszym kontekście?** i **jakie mogą być warianty?** – wariant, który się powtarza albo zmienia, dostaje własną tabelę (słownik, tabela łącząca, historia).
-- Organizmy są **na razie osobne** (prowadzący nanosi poprawki, potem łączymy). Konwencja: PascalCase po angielsku, `<Tabela>Key` NUMBER, klucz obcy o tej samej nazwie co klucz, do którego prowadzi.
-- Stan: 18 organizmów, 118 tabel – `narzedzia/organizmy.py` → `web/organizmy.html` i `sql/organizmy/` (sprawdzone w Oracle 26ai). Jeszcze nierozpisane: moderacja i odwołania, RODO, odznaka i raporty publiczne, personel i audyt, parametry i harmonogram, pamięć zapytań do AI.
+- Organizmy są **na razie osobne** (prowadzący nanosi poprawki, potem łączymy). Konwencja: PascalCase po angielsku, `<Tabela>Key` NUMBER, klucz obcy o tej samej nazwie co klucz, do którego prowadzi. W bazie tabele mają przedrostek numeru organizmu (`ORG01_SourcePlatform`), żeby grupowały się na liście.
+- Stan: 18 organizmów, 118 tabel – `narzedzia/organizmy.py` → `web/organizmy.html` i `sql/organizmy/` (sprawdzone w Oracle 26ai). Tabele są założone we wspólnej bazie Oracle Cloud (konto GHOSTJOB), bez kluczy obcych między organizmami (plik 99). Jeszcze nierozpisane: moderacja i odwołania, RODO, odznaka i raporty publiczne, personel i audyt, parametry i harmonogram, pamięć zapytań do AI.
 
 ## Ustalenia projektowe (już przyjęte)
 1. **Program = osoba = konto w bazie** z uprawnieniami (GRANT). „Czyta/Zapisuje” = uprawnienia.

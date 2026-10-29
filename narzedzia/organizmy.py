@@ -19,6 +19,10 @@ Pola:
 Po zmianie uruchom: python narzedzia/build_web.py (strona web/organizmy.html i pliki sql/organizmy/).
 """
 
+# W bazie nazwa tabeli dostaje przedrostek numeru organizmu (ORG01_SourcePlatform), żeby tabele jednego organizmu
+# stały na liście obok siebie. Kolumny i klucze zostają bez przedrostka (SourcePlatformKey). False = bez przedrostków.
+PRZEDROSTEK_TABEL = True
+
 
 def kol(nazwa, typ, opis, pusta=False, unikalna=False):
     return {"name": nazwa, "type": typ, "desc": opis, "null": pusta, "unique": unikalna}
@@ -59,7 +63,7 @@ ETAPY = {
 
 # Schemat pokazany przez prowadzącego – punkt wyjścia organizmów 1–3.
 SCHEMAT_PROWADZACEGO = [
-    ("SourcePlatform", "zostaje bez zmian nazwy, organizm 1"),
+    ("SourcePlatform", "zostaje, organizm 1"),
     ("PlatformAPI", "zostaje, organizm 2; doszły sposób zabezpieczenia, kierunek i wersje"),
     ("APIType", "zostaje, organizm 2"),
     ("DataFormat", "zostaje, organizm 2; format konkretnej odpowiedzi jest też przy endpoincie"),

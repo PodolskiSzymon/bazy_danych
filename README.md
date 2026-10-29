@@ -27,7 +27,7 @@ Strona `web/organizmy.html` (link jest też na górze mapy warstw). Każdy organ
 1. **Co to jest w szerszym kontekście?** – np. platforma to każde źródło ofert pracy, nie tylko portal.
 2. **Jakie mogą być warianty?** – każdy wariant, który się powtarza albo zmienia, dostaje własną tabelę: słownik (np. `PlatformType`), tabelę łączącą wiele do wielu (np. `PlatformMarket`) albo historię (np. `PartnerAgreement`).
 
-Konwencja jak na schemacie z zajęć: tabele po angielsku w PascalCase (`SourcePlatform`), klucz główny `<Tabela>Key` typu `NUMBER`, klucz obcy nazywa się tak samo jak klucz, do którego prowadzi. Organizmy są na razie osobne – tabela z innego organizmu jest na diagramie szarą ramką, a klucze obce między organizmami są w osobnym pliku `sql/organizmy/99_polaczenia_miedzy_organizmami.sql`.
+Konwencja jak na schemacie z zajęć: tabele po angielsku w PascalCase (`SourcePlatform`), klucz główny `<Tabela>Key` typu `NUMBER`, klucz obcy nazywa się tak samo jak klucz, do którego prowadzi. W bazie nazwa tabeli zaczyna się od `ORG` i numeru organizmu, np. `ORG01_SourcePlatform`, `ORG03_EndpointData` – dzięki temu tabele jednego organizmu stoją na liście obok siebie, a wpisanie `ORG03_` w wyszukiwarkę tabel (Database Actions → Navigator) pokazuje tylko organizm 3. Kolumny i klucze zostają bez przedrostka (`SourcePlatformKey`); przedrostki wyłącza `PRZEDROSTEK_TABEL = False` w `narzedzia/organizmy.py`. Organizmy są na razie osobne – tabela z innego organizmu jest na diagramie szarą ramką, a klucze obce między organizmami są w osobnym pliku `sql/organizmy/99_polaczenia_miedzy_organizmami.sql`.
 
 | Etap | Organizmy |
 |---|---|
