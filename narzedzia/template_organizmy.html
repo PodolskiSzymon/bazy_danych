@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Organizmy tabel – Ghost-Job Scanner</title>
 <meta name="description" content="Model tabel systemu Ghost-Job Scanner: osobne grupy tabel relacyjnych, od platformy źródłowej do Trust Score.">
+<script>
+/* wybrana wersja opisów (zapamiętana w tej przeglądarce) – ustawiana przed narysowaniem strony */
+(() => {
+  const d = document.documentElement;
+  d.classList.add('js');
+  let desc = null, doc = null;
+  try { desc = localStorage.getItem('gjs-desc'); doc = localStorage.getItem('gjs-doc'); } catch (e) { /* bez pamięci */ }
+  d.dataset.desc = ['prosto', 'tech', 'brak'].includes(desc) ? desc : 'prosto';
+  d.dataset.doc = ['prosto', 'tech', 'oba'].includes(doc) ? doc : 'prosto';
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -232,11 +243,85 @@ table.ct, table.vt { border-collapse: collapse; width: 100%; font-size: 13.5px; 
 .otitle { font-weight: 600; font-size: 16px; }
 .oshort { font-size: 13.5px; color: var(--muted); }
 .otabs { margin-top: 4px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.to-doc { display: grid; gap: 2px; max-width: 72ch; margin: 0 0 22px; padding: 12px 16px; border: 1px solid var(--er-line);
+  border-radius: 12px; background: color-mix(in srgb, var(--er-box) 60%, var(--surface)); color: var(--ink); text-decoration: none; }
+.to-doc b { color: var(--er-title); }
+.to-doc span { font-size: 13.5px; color: var(--muted); }
+.to-doc:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--er-line) 22%, transparent); }
+
+/* opis organizmu: dla każdego / dla technicznych */
+.desc { margin: 0 0 24px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.desc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.doc-link { margin-left: auto; font-size: 13.5px; font-weight: 600; text-decoration: none; }
+.doc-link:hover { text-decoration: underline; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 18px; background: var(--bg); }
+.seg button { font: inherit; font-size: 13.5px; font-weight: 600; padding: 4px 12px; border: 0; border-radius: 999px;
+  background: none; color: var(--muted); cursor: pointer; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.dv { max-width: 82ch; }
+.dv > p { margin: 8px 0 0; }
+.dv-h { display: none; }
+.dh { margin: 18px 0 6px; font-size: 15px; font-weight: 600; }
+.example { padding: 10px 14px; border-left: 3px solid var(--er-line); border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--er-box) 70%, var(--surface)); }
+.dl { margin: 0; display: grid; gap: 10px; }
+.dl dt b { font-weight: 600; }
+.dl dd { margin: 2px 0 0; }
+.tref { font-family: var(--font-mono); font-size: .86em; color: var(--er-title); text-decoration: underline dotted;
+  text-underline-offset: 3px; overflow-wrap: anywhere; }
+.tl { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.dec-a { font-weight: 600; }
+.dv code { font-family: var(--font-mono); font-size: .86em; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); overflow-wrap: anywhere; }
+.stats { font-size: 13.5px; color: var(--muted); }
+.mn { color: var(--muted); }
+html[data-desc="prosto"] .org .dv-tech, html[data-desc="tech"] .org .dv-prosto, html[data-desc="brak"] .org .dv { display: none; }
+
+/* dokument z opisami wszystkich organizmów */
+.doc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 18px; }
+.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.toc-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 10px 24px; }
+.toc-l ol { margin: 4px 0 0; padding-left: 26px; display: grid; gap: 2px; font-size: 14px; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+html[data-doc="oba"] #opisy .dv-h { display: block; margin: 18px 0 0; font-size: 11.5px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); }
+html[data-doc="prosto"] #opisy .dv-tech, html[data-doc="tech"] #opisy .dv-prosto { display: none; }
+.h2 { font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.2; margin: 6px 0 6px; }
+.doc-intro { margin-top: 26px; }
+.doc-stage { margin-top: 40px; scroll-margin-top: 70px; }
+.stage-d { margin: 0 0 4px; max-width: 82ch; }
+.doc-org { margin-top: 16px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  scroll-margin-top: 70px; }
+.doc-h { display: flex; align-items: baseline; gap: 12px; margin: 0 0 2px; font-family: var(--font-display); font-size: 21px;
+  font-weight: 700; line-height: 1.2; }
+.doc-h .onum { font-size: 24px; }
+.doc-short { margin: 0; color: var(--muted); max-width: 82ch; }
+.doc-ask { margin: 16px 0 0; padding: 10px 14px; max-width: 82ch; border-left: 4px solid var(--store); border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--store) 7%, var(--surface)); }
+.doc-more { margin: 10px 0 0; font-weight: 600; }
+.doc-more a { text-decoration: none; }
+#start-data-modeler { scroll-margin-top: 70px; }
+.qa-box > .dh:first-child { margin-top: 0; }
+.doc-gloss { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); scroll-margin-top: 70px; }
+.gloss { max-width: 82ch; margin-top: 12px; }
+.gloss dt { font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .ocard, .tcard { transition: none; } }
 @media print {
-  .topbar, .tbtn, .crumbs, .pn-bottom, .sqlbox { display: none !important; }
-  .js .view { display: block; break-before: page; }
+  :root:not(#_) {
+    --bg: #ffffff; --surface: #ffffff; --ink: #16202c; --muted: #4a5566; --line: #c4cbd6; --program: #2461c8; --store: #c95c1b;
+    --pk: #b4232b; --person: #1b8655; --er-box: #fcf7dc; --er-hdr: #f1e5a6; --er-line: #8c7a2e; --er-title: #1f4fa6;
+    --er-text: #1b1f26; --er-type: #5c6068; --er-mark: #8a3b12; --er-edge: #4b5260; --er-stub-box: #f3f4f6;
+    --er-stub-hdr: #e6e9ee; --er-stub-line: #98a2b3; --er-stub-title: #5b6574; color-scheme: light;
+  }
+  body { background: #fff; }
+  .topbar, .tbtn, .crumbs, .pn-bottom, .sqlbox, .seg, .doc-bar, .doc-link, .doc-more { display: none !important; }
+  .page { padding: 0; max-width: none; }
   .dg { overflow: visible; border: 0; }
+  .dh, .doc-h, .h2, .stage-h { break-after: avoid; }
+  a { color: inherit; text-decoration: none; }
 }
 </style>
 </head>
@@ -260,7 +345,7 @@ table.ct, table.vt { border-collapse: collapse; width: 100%; font-size: 13.5px; 
   const pills = [...document.querySelectorAll('[data-nav]')];
   let current = null;
 
-  function show(hash) {
+  function show(hash, again) {
     const [id, table] = decodeURIComponent((hash || '').replace(/^#/, '')).split('/');
     const view = views.find(v => v.id === id) || document.getElementById('start');
     if (view !== current) {
@@ -273,14 +358,30 @@ table.ct, table.vt { border-collapse: collapse; width: 100%; font-size: 13.5px; 
         } else p.removeAttribute('aria-current');
       });
       document.title = view.id === 'start' ? BASE : `${TITLES[view.id]} – ${BASE}`;
-      if (!table) {
-        window.scrollTo(0, 0);
-        const h = view.querySelector('.h1');
-        if (h) h.focus({ preventScroll: true });
-      }
+      again = true;
     }
-    if (table) select(view, table, true);
+    if (table && !view.classList.contains('org')) {
+      // miejsce w przeglądzie albo w dokumencie z opisami, np. #opisy/o3 → #opis-o3, #start/data-modeler
+      const part = document.getElementById(`${view.id === 'opisy' ? 'opis' : view.id}-${table}`);
+      if (part) part.scrollIntoView({ block: 'start' });
+    } else if (table) select(view, table, true);
+    else if (again) {
+      window.scrollTo(0, 0);
+      const h = view.querySelector('.h1');
+      if (h) h.focus({ preventScroll: true });
+    }
   }
+
+  // wersja opisów: w organizmie (dla każdego / dla technicznych / ukryj) i w dokumencie z opisami
+  const root = document.documentElement;
+  function setMode(key, value) {
+    root.dataset[key] = value;
+    const attr = key === 'desc' ? 'setDesc' : 'setDoc';
+    document.querySelectorAll(`[data-set-${key}]`).forEach(b => b.setAttribute('aria-pressed', b.dataset[attr] === value));
+    try { localStorage.setItem(`gjs-${key}`, value); } catch (e) { /* bez pamięci – wybór działa do zamknięcia strony */ }
+  }
+  setMode('desc', root.dataset.desc || 'prosto');
+  setMode('doc', root.dataset.doc || 'prosto');
 
   function select(view, name, toCard) {
     const svg = view.querySelector('svg.er');
@@ -378,6 +479,20 @@ table.ct, table.vt { border-collapse: collapse; width: 100%; font-size: 13.5px; 
       };
       if (navigator.clipboard) navigator.clipboard.writeText(code.textContent).then(done, fallback);
       else fallback();
+      return;
+    }
+    const mode = ev.target.closest('[data-set-desc], [data-set-doc]');
+    if (mode) {
+      if (mode.dataset.setDesc) setMode('desc', mode.dataset.setDesc);
+      else setMode('doc', mode.dataset.setDoc);
+      return;
+    }
+    if (ev.target.closest('[data-print]')) { window.print(); return; }
+    // ponowne kliknięcie odnośnika do miejsca, w którym już jesteśmy – przewiń jeszcze raz
+    const same = ev.target.closest('a[href^="#"]');
+    if (same && same.getAttribute('href') === location.hash) {
+      ev.preventDefault();
+      show(location.hash, true);
     }
   });
 

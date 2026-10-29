@@ -101,6 +101,7 @@ ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_C
 ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_PK PRIMARY KEY (AgencyClientKey);
 ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_UN UNIQUE (AgencyEmployerKey, ClientEmployerKey, ValidFrom);
 ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_CK1 CHECK (AgencyEmployerKey <> ClientEmployerKey);
+ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_CK2 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
 ALTER TABLE ORG07_EvidenceType ADD CONSTRAINT ORG07_EvidenceType_PK PRIMARY KEY (EvidenceTypeKey);
 ALTER TABLE ORG07_EvidenceType ADD CONSTRAINT ORG07_EvidenceType_EvidenceTypeName_UN UNIQUE (EvidenceTypeName);
 ALTER TABLE ORG07_LinkChange ADD CONSTRAINT ORG07_LinkChange_PK PRIMARY KEY (LinkChangeKey);

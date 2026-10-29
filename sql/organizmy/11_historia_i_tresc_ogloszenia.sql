@@ -101,6 +101,7 @@ ALTER TABLE ORG11_PostingEventType ADD CONSTRAINT ORG11_PostingEventType_Posting
 ALTER TABLE ORG11_PostingEvent ADD CONSTRAINT ORG11_PostingEvent_PK PRIMARY KEY (PostingEventKey);
 ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_PK PRIMARY KEY (PostingVersionKey);
 ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_UN UNIQUE (JobPostingKey, VersionNumber);
+ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_CK1 CHECK (ValidTo IS NULL OR ValidTo > ValidFrom);
 ALTER TABLE ORG11_BoilerplatePattern ADD CONSTRAINT ORG11_BoilerplatePattern_PK PRIMARY KEY (BoilerplatePatternKey);
 ALTER TABLE ORG11_VersionBoilerplate ADD CONSTRAINT ORG11_VersionBoilerplate_PK PRIMARY KEY (VersionBoilerplateKey);
 ALTER TABLE ORG11_VersionBoilerplate ADD CONSTRAINT ORG11_VersionBoilerplate_UN UNIQUE (PostingVersionKey, BoilerplatePatternKey);

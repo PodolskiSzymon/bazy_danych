@@ -100,6 +100,7 @@ ALTER TABLE ORG18_ScoringMethodType ADD CONSTRAINT ORG18_ScoringMethodType_PK PR
 ALTER TABLE ORG18_ScoringMethodType ADD CONSTRAINT ORG18_ScoringMethodType_ScoringMethodTypeName_UN UNIQUE (ScoringMethodTypeName);
 ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_PK PRIMARY KEY (ScoringMethodKey);
 ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_UN UNIQUE (ScoringMethodTypeKey, MethodVersion);
+ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_CK1 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
 ALTER TABLE ORG18_ScoringWeight ADD CONSTRAINT ORG18_ScoringWeight_PK PRIMARY KEY (ScoringWeightKey);
 ALTER TABLE ORG18_ScoringWeight ADD CONSTRAINT ORG18_ScoringWeight_UN UNIQUE (ScoringMethodKey, SignalTypeKey);
 ALTER TABLE ORG18_TrustScore ADD CONSTRAINT ORG18_TrustScore_PK PRIMARY KEY (TrustScoreKey);
