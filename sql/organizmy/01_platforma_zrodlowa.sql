@@ -3,12 +3,12 @@
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
-CREATE TABLE PlatformType (
+CREATE TABLE ORG01_PlatformType (
     PlatformTypeKey   NUMBER(2)     NOT NULL,
     PlatformTypeName  VARCHAR2(40)  NOT NULL
 );
 
-CREATE TABLE SourcePlatform (
+CREATE TABLE ORG01_SourcePlatform (
     SourcePlatformKey   NUMBER(4)      NOT NULL,
     SourcePlatformName  VARCHAR2(50)   NOT NULL,
     MainHomePage        VARCHAR2(100)  NOT NULL,
@@ -16,21 +16,21 @@ CREATE TABLE SourcePlatform (
     AddedDate           DATE           NOT NULL
 );
 
-CREATE TABLE PlatformDomain (
+CREATE TABLE ORG01_PlatformDomain (
     PlatformDomainKey  NUMBER(5)      NOT NULL,
     SourcePlatformKey  NUMBER(4)      NOT NULL,
     DomainName         VARCHAR2(100)  NOT NULL,
     IsMainDomain       CHAR(1)        NOT NULL
 );
 
-CREATE TABLE PlatformMarket (
+CREATE TABLE ORG01_PlatformMarket (
     PlatformMarketKey  NUMBER(5)  NOT NULL,
     SourcePlatformKey  NUMBER(4)  NOT NULL,
     CountryKey         NUMBER(3)  NOT NULL,
     LaunchDate         DATE
 );
 
-CREATE TABLE PartnerAgreement (
+CREATE TABLE ORG01_PartnerAgreement (
     PartnerAgreementKey         NUMBER(5)  NOT NULL,
     SourcePlatformKey           NUMBER(4)  NOT NULL,
     AgreementStatusKey          NUMBER(2)  NOT NULL,
@@ -40,100 +40,100 @@ CREATE TABLE PartnerAgreement (
     HasDataProcessingAgreement  CHAR(1)    NOT NULL
 );
 
-CREATE TABLE AgreementStatus (
+CREATE TABLE ORG01_AgreementStatus (
     AgreementStatusKey   NUMBER(2)     NOT NULL,
     AgreementStatusName  VARCHAR2(30)  NOT NULL
 );
 
-CREATE TABLE Country (
+CREATE TABLE ORG01_Country (
     CountryKey   NUMBER(3)     NOT NULL,
     CountryCode  CHAR(2)       NOT NULL,
     CountryName  VARCHAR2(60)  NOT NULL
 );
 
-COMMENT ON TABLE PlatformType IS 'Rodzaj platformy – odpowiedź na pytanie, czym w szerszym kontekście jest źródło ofert.';
-COMMENT ON COLUMN PlatformType.PlatformTypeKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN PlatformType.PlatformTypeName IS 'Nazwa rodzaju platformy';
+COMMENT ON TABLE ORG01_PlatformType IS 'Rodzaj platformy – odpowiedź na pytanie, czym w szerszym kontekście jest źródło ofert.';
+COMMENT ON COLUMN ORG01_PlatformType.PlatformTypeKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_PlatformType.PlatformTypeName IS 'Nazwa rodzaju platformy';
 
-COMMENT ON TABLE SourcePlatform IS 'Platforma, z której pochodzą dane, np. pracuj.pl albo OLX – ta sama tabela co na schemacie z zajęć.';
-COMMENT ON COLUMN SourcePlatform.SourcePlatformKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN SourcePlatform.SourcePlatformName IS 'Nazwa platformy, np. pracuj.pl';
-COMMENT ON COLUMN SourcePlatform.MainHomePage IS 'Adres strony głównej';
-COMMENT ON COLUMN SourcePlatform.PlatformTypeKey IS 'Rodzaj platformy';
-COMMENT ON COLUMN SourcePlatform.AddedDate IS 'Kiedy dodaliśmy platformę jako źródło';
+COMMENT ON TABLE ORG01_SourcePlatform IS 'Platforma, z której pochodzą dane, np. pracuj.pl albo OLX – ta sama tabela co na schemacie z zajęć.';
+COMMENT ON COLUMN ORG01_SourcePlatform.SourcePlatformKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_SourcePlatform.SourcePlatformName IS 'Nazwa platformy, np. pracuj.pl';
+COMMENT ON COLUMN ORG01_SourcePlatform.MainHomePage IS 'Adres strony głównej';
+COMMENT ON COLUMN ORG01_SourcePlatform.PlatformTypeKey IS 'Rodzaj platformy';
+COMMENT ON COLUMN ORG01_SourcePlatform.AddedDate IS 'Kiedy dodaliśmy platformę jako źródło';
 
-COMMENT ON TABLE PlatformDomain IS 'Adres, pod którym działa platforma. Jedna platforma ma ich kilka.';
-COMMENT ON COLUMN PlatformDomain.PlatformDomainKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN PlatformDomain.SourcePlatformKey IS 'Platforma';
-COMMENT ON COLUMN PlatformDomain.DomainName IS 'Domena, np. it.pracuj.pl';
-COMMENT ON COLUMN PlatformDomain.IsMainDomain IS 'Czy to główny adres platformy';
+COMMENT ON TABLE ORG01_PlatformDomain IS 'Adres, pod którym działa platforma. Jedna platforma ma ich kilka.';
+COMMENT ON COLUMN ORG01_PlatformDomain.PlatformDomainKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_PlatformDomain.SourcePlatformKey IS 'Platforma';
+COMMENT ON COLUMN ORG01_PlatformDomain.DomainName IS 'Domena, np. it.pracuj.pl';
+COMMENT ON COLUMN ORG01_PlatformDomain.IsMainDomain IS 'Czy to główny adres platformy';
 
-COMMENT ON TABLE PlatformMarket IS 'Kraj, w którym platforma publikuje oferty – tabela łącząca platformy z krajami.';
-COMMENT ON COLUMN PlatformMarket.PlatformMarketKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN PlatformMarket.SourcePlatformKey IS 'Platforma';
-COMMENT ON COLUMN PlatformMarket.CountryKey IS 'Kraj';
-COMMENT ON COLUMN PlatformMarket.LaunchDate IS 'Od kiedy platforma działa w tym kraju';
+COMMENT ON TABLE ORG01_PlatformMarket IS 'Kraj, w którym platforma publikuje oferty – tabela łącząca platformy z krajami.';
+COMMENT ON COLUMN ORG01_PlatformMarket.PlatformMarketKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_PlatformMarket.SourcePlatformKey IS 'Platforma';
+COMMENT ON COLUMN ORG01_PlatformMarket.CountryKey IS 'Kraj';
+COMMENT ON COLUMN ORG01_PlatformMarket.LaunchDate IS 'Od kiedy platforma działa w tym kraju';
 
-COMMENT ON TABLE PartnerAgreement IS 'Umowa o współpracy z platformą. Każda zmiana warunków to nowy wiersz, więc widać całą historię współpracy.';
-COMMENT ON COLUMN PartnerAgreement.PartnerAgreementKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN PartnerAgreement.SourcePlatformKey IS 'Platforma';
-COMMENT ON COLUMN PartnerAgreement.AgreementStatusKey IS 'Etap umowy';
-COMMENT ON COLUMN PartnerAgreement.SignedDate IS 'Data podpisania';
-COMMENT ON COLUMN PartnerAgreement.ValidFrom IS 'Od kiedy obowiązuje';
-COMMENT ON COLUMN PartnerAgreement.ValidTo IS 'Do kiedy obowiązuje (puste = bez końca)';
-COMMENT ON COLUMN PartnerAgreement.HasDataProcessingAgreement IS 'Czy podpisano umowę powierzenia danych osobowych (RODO)';
+COMMENT ON TABLE ORG01_PartnerAgreement IS 'Umowa o współpracy z platformą. Każda zmiana warunków to nowy wiersz, więc widać całą historię współpracy.';
+COMMENT ON COLUMN ORG01_PartnerAgreement.PartnerAgreementKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_PartnerAgreement.SourcePlatformKey IS 'Platforma';
+COMMENT ON COLUMN ORG01_PartnerAgreement.AgreementStatusKey IS 'Etap umowy';
+COMMENT ON COLUMN ORG01_PartnerAgreement.SignedDate IS 'Data podpisania';
+COMMENT ON COLUMN ORG01_PartnerAgreement.ValidFrom IS 'Od kiedy obowiązuje';
+COMMENT ON COLUMN ORG01_PartnerAgreement.ValidTo IS 'Do kiedy obowiązuje (puste = bez końca)';
+COMMENT ON COLUMN ORG01_PartnerAgreement.HasDataProcessingAgreement IS 'Czy podpisano umowę powierzenia danych osobowych (RODO)';
 
-COMMENT ON TABLE AgreementStatus IS 'Etap umowy z platformą.';
-COMMENT ON COLUMN AgreementStatus.AgreementStatusKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN AgreementStatus.AgreementStatusName IS 'Nazwa etapu umowy';
+COMMENT ON TABLE ORG01_AgreementStatus IS 'Etap umowy z platformą.';
+COMMENT ON COLUMN ORG01_AgreementStatus.AgreementStatusKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_AgreementStatus.AgreementStatusName IS 'Nazwa etapu umowy';
 
-COMMENT ON TABLE Country IS 'Kraj – słownik używany też w organizmach 6 i 8.';
-COMMENT ON COLUMN Country.CountryKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN Country.CountryCode IS 'Kod kraju ISO, np. PL';
-COMMENT ON COLUMN Country.CountryName IS 'Nazwa kraju';
+COMMENT ON TABLE ORG01_Country IS 'Kraj – słownik używany też w organizmach 6 i 8.';
+COMMENT ON COLUMN ORG01_Country.CountryKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG01_Country.CountryCode IS 'Kod kraju ISO, np. PL';
+COMMENT ON COLUMN ORG01_Country.CountryName IS 'Nazwa kraju';
 
-ALTER TABLE PlatformType ADD CONSTRAINT PlatformType_PK PRIMARY KEY (PlatformTypeKey);
-ALTER TABLE PlatformType ADD CONSTRAINT PlatformType_PlatformTypeName_UN UNIQUE (PlatformTypeName);
-ALTER TABLE SourcePlatform ADD CONSTRAINT SourcePlatform_PK PRIMARY KEY (SourcePlatformKey);
-ALTER TABLE SourcePlatform ADD CONSTRAINT SourcePlatform_SourcePlatformName_UN UNIQUE (SourcePlatformName);
-ALTER TABLE PlatformDomain ADD CONSTRAINT PlatformDomain_PK PRIMARY KEY (PlatformDomainKey);
-ALTER TABLE PlatformDomain ADD CONSTRAINT PlatformDomain_DomainName_UN UNIQUE (DomainName);
-ALTER TABLE PlatformDomain ADD CONSTRAINT PlatformDomain_IsMainDomain_CK CHECK (IsMainDomain IN ('T', 'N'));
-ALTER TABLE PlatformMarket ADD CONSTRAINT PlatformMarket_PK PRIMARY KEY (PlatformMarketKey);
-ALTER TABLE PlatformMarket ADD CONSTRAINT PlatformMarket_UN UNIQUE (SourcePlatformKey, CountryKey);
-ALTER TABLE PartnerAgreement ADD CONSTRAINT PartnerAgreement_PK PRIMARY KEY (PartnerAgreementKey);
-ALTER TABLE PartnerAgreement ADD CONSTRAINT PartnerAgreement_HasDataProcessingAgreement_CK CHECK (HasDataProcessingAgreement IN ('T', 'N'));
-ALTER TABLE PartnerAgreement ADD CONSTRAINT PartnerAgreement_CK1 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
-ALTER TABLE AgreementStatus ADD CONSTRAINT AgreementStatus_PK PRIMARY KEY (AgreementStatusKey);
-ALTER TABLE AgreementStatus ADD CONSTRAINT AgreementStatus_AgreementStatusName_UN UNIQUE (AgreementStatusName);
-ALTER TABLE Country ADD CONSTRAINT Country_PK PRIMARY KEY (CountryKey);
-ALTER TABLE Country ADD CONSTRAINT Country_CountryCode_UN UNIQUE (CountryCode);
+ALTER TABLE ORG01_PlatformType ADD CONSTRAINT ORG01_PlatformType_PK PRIMARY KEY (PlatformTypeKey);
+ALTER TABLE ORG01_PlatformType ADD CONSTRAINT ORG01_PlatformType_PlatformTypeName_UN UNIQUE (PlatformTypeName);
+ALTER TABLE ORG01_SourcePlatform ADD CONSTRAINT ORG01_SourcePlatform_PK PRIMARY KEY (SourcePlatformKey);
+ALTER TABLE ORG01_SourcePlatform ADD CONSTRAINT ORG01_SourcePlatform_SourcePlatformName_UN UNIQUE (SourcePlatformName);
+ALTER TABLE ORG01_PlatformDomain ADD CONSTRAINT ORG01_PlatformDomain_PK PRIMARY KEY (PlatformDomainKey);
+ALTER TABLE ORG01_PlatformDomain ADD CONSTRAINT ORG01_PlatformDomain_DomainName_UN UNIQUE (DomainName);
+ALTER TABLE ORG01_PlatformDomain ADD CONSTRAINT ORG01_PlatformDomain_IsMainDomain_CK CHECK (IsMainDomain IN ('T', 'N'));
+ALTER TABLE ORG01_PlatformMarket ADD CONSTRAINT ORG01_PlatformMarket_PK PRIMARY KEY (PlatformMarketKey);
+ALTER TABLE ORG01_PlatformMarket ADD CONSTRAINT ORG01_PlatformMarket_UN UNIQUE (SourcePlatformKey, CountryKey);
+ALTER TABLE ORG01_PartnerAgreement ADD CONSTRAINT ORG01_PartnerAgreement_PK PRIMARY KEY (PartnerAgreementKey);
+ALTER TABLE ORG01_PartnerAgreement ADD CONSTRAINT ORG01_PartnerAgreement_HasDataProcessingAgreement_CK CHECK (HasDataProcessingAgreement IN ('T', 'N'));
+ALTER TABLE ORG01_PartnerAgreement ADD CONSTRAINT ORG01_PartnerAgreement_CK1 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
+ALTER TABLE ORG01_AgreementStatus ADD CONSTRAINT ORG01_AgreementStatus_PK PRIMARY KEY (AgreementStatusKey);
+ALTER TABLE ORG01_AgreementStatus ADD CONSTRAINT ORG01_AgreementStatus_AgreementStatusName_UN UNIQUE (AgreementStatusName);
+ALTER TABLE ORG01_Country ADD CONSTRAINT ORG01_Country_PK PRIMARY KEY (CountryKey);
+ALTER TABLE ORG01_Country ADD CONSTRAINT ORG01_Country_CountryCode_UN UNIQUE (CountryCode);
 
-ALTER TABLE SourcePlatform ADD CONSTRAINT SourcePlatform_PlatformType_FK FOREIGN KEY (PlatformTypeKey) REFERENCES PlatformType (PlatformTypeKey);
-ALTER TABLE PlatformDomain ADD CONSTRAINT PlatformDomain_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES SourcePlatform (SourcePlatformKey);
-ALTER TABLE PlatformMarket ADD CONSTRAINT PlatformMarket_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES SourcePlatform (SourcePlatformKey);
-ALTER TABLE PlatformMarket ADD CONSTRAINT PlatformMarket_Country_FK FOREIGN KEY (CountryKey) REFERENCES Country (CountryKey);
-ALTER TABLE PartnerAgreement ADD CONSTRAINT PartnerAgreement_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES SourcePlatform (SourcePlatformKey);
-ALTER TABLE PartnerAgreement ADD CONSTRAINT PartnerAgreement_AgreementStatus_FK FOREIGN KEY (AgreementStatusKey) REFERENCES AgreementStatus (AgreementStatusKey);
+ALTER TABLE ORG01_SourcePlatform ADD CONSTRAINT ORG01_SourcePlatform_PlatformType_FK FOREIGN KEY (PlatformTypeKey) REFERENCES ORG01_PlatformType (PlatformTypeKey);
+ALTER TABLE ORG01_PlatformDomain ADD CONSTRAINT ORG01_PlatformDomain_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES ORG01_SourcePlatform (SourcePlatformKey);
+ALTER TABLE ORG01_PlatformMarket ADD CONSTRAINT ORG01_PlatformMarket_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES ORG01_SourcePlatform (SourcePlatformKey);
+ALTER TABLE ORG01_PlatformMarket ADD CONSTRAINT ORG01_PlatformMarket_Country_FK FOREIGN KEY (CountryKey) REFERENCES ORG01_Country (CountryKey);
+ALTER TABLE ORG01_PartnerAgreement ADD CONSTRAINT ORG01_PartnerAgreement_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES ORG01_SourcePlatform (SourcePlatformKey);
+ALTER TABLE ORG01_PartnerAgreement ADD CONSTRAINT ORG01_PartnerAgreement_AgreementStatus_FK FOREIGN KEY (AgreementStatusKey) REFERENCES ORG01_AgreementStatus (AgreementStatusKey);
 
 -- Przykładowe wiersze: w słownikach to warianty, o które pytaliśmy („jakie mogą być warianty?”).
-INSERT INTO PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (1, 'Portal z ofertami pracy');
-INSERT INTO PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (2, 'Serwis ogłoszeń drobnych');
-INSERT INTO PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (3, 'Agregator ofert');
-INSERT INTO PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (4, 'Serwis społecznościowy');
-INSERT INTO PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (5, 'Publiczny urząd pracy');
-INSERT INTO PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (6, 'Strona kariery firmy (ATS)');
-INSERT INTO SourcePlatform (SourcePlatformKey, SourcePlatformName, MainHomePage, PlatformTypeKey, AddedDate) VALUES (1, 'pracuj.pl', 'https://www.pracuj.pl', 1, DATE '2026-10-01');
-INSERT INTO SourcePlatform (SourcePlatformKey, SourcePlatformName, MainHomePage, PlatformTypeKey, AddedDate) VALUES (2, 'OLX', 'https://www.olx.pl', 2, DATE '2026-10-01');
-INSERT INTO Country (CountryKey, CountryCode, CountryName) VALUES (1, 'PL', 'Polska');
-INSERT INTO Country (CountryKey, CountryCode, CountryName) VALUES (2, 'DE', 'Niemcy');
-INSERT INTO Country (CountryKey, CountryCode, CountryName) VALUES (3, 'CZ', 'Czechy');
-INSERT INTO Country (CountryKey, CountryCode, CountryName) VALUES (4, 'RO', 'Rumunia');
-INSERT INTO Country (CountryKey, CountryCode, CountryName) VALUES (5, 'PT', 'Portugalia');
-INSERT INTO Country (CountryKey, CountryCode, CountryName) VALUES (6, 'UA', 'Ukraina');
-INSERT INTO AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (1, 'Negocjacje');
-INSERT INTO AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (2, 'Pilotaż');
-INSERT INTO AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (3, 'Aktywna');
-INSERT INTO AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (4, 'Zawieszona');
-INSERT INTO AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (5, 'Rozwiązana');
+INSERT INTO ORG01_PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (1, 'Portal z ofertami pracy');
+INSERT INTO ORG01_PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (2, 'Serwis ogłoszeń drobnych');
+INSERT INTO ORG01_PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (3, 'Agregator ofert');
+INSERT INTO ORG01_PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (4, 'Serwis społecznościowy');
+INSERT INTO ORG01_PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (5, 'Publiczny urząd pracy');
+INSERT INTO ORG01_PlatformType (PlatformTypeKey, PlatformTypeName) VALUES (6, 'Strona kariery firmy (ATS)');
+INSERT INTO ORG01_SourcePlatform (SourcePlatformKey, SourcePlatformName, MainHomePage, PlatformTypeKey, AddedDate) VALUES (1, 'pracuj.pl', 'https://www.pracuj.pl', 1, DATE '2026-10-01');
+INSERT INTO ORG01_SourcePlatform (SourcePlatformKey, SourcePlatformName, MainHomePage, PlatformTypeKey, AddedDate) VALUES (2, 'OLX', 'https://www.olx.pl', 2, DATE '2026-10-01');
+INSERT INTO ORG01_Country (CountryKey, CountryCode, CountryName) VALUES (1, 'PL', 'Polska');
+INSERT INTO ORG01_Country (CountryKey, CountryCode, CountryName) VALUES (2, 'DE', 'Niemcy');
+INSERT INTO ORG01_Country (CountryKey, CountryCode, CountryName) VALUES (3, 'CZ', 'Czechy');
+INSERT INTO ORG01_Country (CountryKey, CountryCode, CountryName) VALUES (4, 'RO', 'Rumunia');
+INSERT INTO ORG01_Country (CountryKey, CountryCode, CountryName) VALUES (5, 'PT', 'Portugalia');
+INSERT INTO ORG01_Country (CountryKey, CountryCode, CountryName) VALUES (6, 'UA', 'Ukraina');
+INSERT INTO ORG01_AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (1, 'Negocjacje');
+INSERT INTO ORG01_AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (2, 'Pilotaż');
+INSERT INTO ORG01_AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (3, 'Aktywna');
+INSERT INTO ORG01_AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (4, 'Zawieszona');
+INSERT INTO ORG01_AgreementStatus (AgreementStatusKey, AgreementStatusName) VALUES (5, 'Rozwiązana');
 COMMIT;

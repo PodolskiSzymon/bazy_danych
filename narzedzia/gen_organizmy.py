@@ -11,7 +11,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
-from organizmy import DO_ROZPISANIA, ETAPY, ORGANIZMY, SCHEMAT_PROWADZACEGO  # noqa: E402
+from organizmy import DO_ROZPISANIA, ETAPY, ORGANIZMY, PRZEDROSTEK_TABEL, SCHEMAT_PROWADZACEGO  # noqa: E402
 
 SQL_DIR = os.path.join(ROOT, "sql", "organizmy")
 OUT_HTML = os.path.join(ROOT, "web", "organizmy.html")
@@ -37,6 +37,11 @@ def slug(s):
     return re.sub(r"[^a-z0-9]+", "_", s).strip("_")
 
 
+def prefix(nr):
+    """Przedrostek nazwy tabeli w bazie: ORG01_, ORG02_… (pusty, gdy PRZEDROSTEK_TABEL = False)."""
+    return f"ORG{nr:02d}_" if PRZEDROSTEK_TABEL else ""
+
+
 # ───────────── model: kolumny, klucze, ograniczenia ─────────────
 def build_model():
     tables = {}
@@ -46,6 +51,7 @@ def build_model():
             if t["name"] in tables:
                 raise SystemExit(f"Tabela {t['name']} występuje w dwóch organizmach")
             t["org"] = o["id"]
+            t["sql"] = prefix(o["id"]) + t["name"]
             tables[t["name"]] = t
             o["own"].append(t["name"])
     for t in tables.values():
@@ -66,28 +72,28 @@ def build_model():
             raise SystemExit(f"{t['name']}: powtórzone kolumny {dup}")
         t["columns"], t["colnames"] = cols, names
         # ograniczenia – te same nazwy na diagramie i w SQL
-        t["pk_name"] = f"{t['name']}_PK"
+        t["pk_name"] = f"{t['sql']}_PK"
         singles = [[c["name"]] for c in cols if c.get("unique")]
         multi = t["unique"]
         for u in singles + multi:
             for n in u:
                 if n not in names:
                     raise SystemExit(f"{t['name']}: klucz unikalny na nieistniejącej kolumnie {n}")
-        uqs = [(f"{t['name']}_{u[0]}_UN", u) for u in singles]
-        uqs += [(f"{t['name']}_UN" if len(multi) == 1 else f"{t['name']}_UN{i}", u) for i, u in enumerate(multi, 1)]
+        uqs = [(f"{t['sql']}_{u[0]}_UN", u) for u in singles]
+        uqs += [(f"{t['sql']}_UN" if len(multi) == 1 else f"{t['sql']}_UN{i}", u) for i, u in enumerate(multi, 1)]
         t["uqs"] = uqs
-        cks = [(f"{t['name']}_{c['name']}_CK", f"{c['name']} IN ('T', 'N')") for c in cols if c.get("flag")]
+        cks = [(f"{t['sql']}_{c['name']}_CK", f"{c['name']} IN ('T', 'N')") for c in cols if c.get("flag")]
         for i, ch in enumerate(t["checks"], 1):
             for word in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", ch):
                 if word not in SQL_WORDS and word not in names:
                     raise SystemExit(f"{t['name']}: warunek „{ch}” – nie ma kolumny {word}")
-            cks.append((f"{t['name']}_CK{i}", ch))
+            cks.append((f"{t['sql']}_CK{i}", ch))
         t["cks"] = cks
         fk_cols = [c for c in cols if "ref" in c]
         fks = []
         for c in fk_cols:
             same = [d for d in fk_cols if d["ref"] == c["ref"]]
-            name = f"{t['name']}_{c['ref']}_FK" if len(same) == 1 else f"{t['name']}_{c['name']}_FK"
+            name = f"{t['sql']}_{c['ref']}_FK" if len(same) == 1 else f"{t['sql']}_{c['name']}_FK"
             fks.append((name, c))
         t["fks"] = fks
     # przykładowe wiersze
@@ -150,11 +156,11 @@ def make_box(t, stub):
         sub = None
     namew = max(len(r[2]) for r in rows)
     typew = max(len(r[3]) for r in rows)
-    w = max((3 + 2 + namew + 2 + typew) * CH, len(t["name"]) * CH_H + 12,
+    w = max((3 + 2 + namew + 2 + typew) * CH, len(t["sql"]) * CH_H + 12,
             max((len(f) for f in foot), default=0) * CH_F) + 2 * PAD
     hdr = HDR + (12 if stub else 0)
     h = hdr + TOP + len(rows) * ROW + ((8 + len(foot) * FOOT) if foot else 0) + 6
-    return {"name": t["name"], "stub": stub, "rows": rows, "foot": foot, "sub": sub, "w": round(w), "h": h,
+    return {"name": t["name"], "label": t["sql"], "stub": stub, "rows": rows, "foot": foot, "sub": sub, "w": round(w), "h": h,
             "hdr": hdr, "namex": PAD + 5 * CH, "typex": PAD + (5 + namew + 2) * CH, "org": t["org"]}
 
 
@@ -251,12 +257,12 @@ def render_svg(o, tables, warnings):
     for e in edges:
         a, b = boxes[e["from"]], boxes[e["to"]]
         cls = "edge" + (" opt" if e["opt"] else "")
-        title = f"{e['from']}.{e['col']} → {e['to']}"
+        title = f"{a['label']}.{e['col']} → {b['label']}"
         if a is b:  # relacja do samej siebie
             sx, sy = a["x"] + a["w"], a["y"] + a["h"] * 0.34
             ex, ey = a["x"] + a["w"], a["y"] + a["h"] * 0.62
             d = f"M{sx} {sy:.1f}H{sx + 34}V{ey:.1f}H{ex}"
-            parts.append(f'<g class="{cls}" data-from="{a["name"]}" data-to="{a["name"]}"><title>{esc(title)}</title>'
+            parts.append(f'<g class="{cls}" data-from="{a["label"]}" data-to="{a["label"]}"><title>{esc(title)}</title>'
                          f'<path class="e-line" d="{d}"/><path class="e-foot" d="{foot_path(sx, sy, 1, 0)}"/>'
                          f'<path class="e-head" d="{head_path(ex, ey, -1, 0)}"/></g>')
             continue
@@ -273,7 +279,7 @@ def render_svg(o, tables, warnings):
         for other in boxes.values():
             if other is not a and other is not b and seg_hits_box(p, q, other):
                 warnings.append(f"organizm {o['id']}: linia {e['from']} → {e['to']} przecina tabelę {other['name']}")
-        parts.append(f'<g class="{cls}" data-from="{a["name"]}" data-to="{b["name"]}"><title>{esc(title)}</title>'
+        parts.append(f'<g class="{cls}" data-from="{a["label"]}" data-to="{b["label"]}"><title>{esc(title)}</title>'
                      f'<path class="e-line" d="M{p[0]:.1f} {p[1]:.1f}L{q[0]:.1f} {q[1]:.1f}"/>'
                      f'<path class="e-foot" d="{foot_path(p[0], p[1], ux, uy)}"/>'
                      f'<path class="e-head" d="{head_path(q[0], q[1], ux, uy)}"/></g>')
@@ -282,13 +288,13 @@ def render_svg(o, tables, warnings):
     for b in sorted(boxes.values(), key=lambda b: (b["pos"][1], b["pos"][0])):
         x, y, w, h = b["x"], b["y"], b["w"], b["h"]
         cls = "tbl stub" if b["stub"] else "tbl"
-        label = (f"Tabela {b['name']} z organizmu {b['org']} – przejdź" if b["stub"]
-                 else f"Tabela {b['name']} – pokaż opis")
-        g = [f'<g class="{cls}" data-t="{b["name"]}" data-org="{b["org"]}" tabindex="0" role="button" '
+        label = (f"Tabela {b['label']} z organizmu {b['org']} – przejdź" if b["stub"]
+                 else f"Tabela {b['label']} – pokaż opis")
+        g = [f'<g class="{cls}" data-t="{b["label"]}" data-org="{b["org"]}" tabindex="0" role="button" '
              f'aria-label="{esc(label)}">',
              f'<rect class="t-box" x="{x}" y="{y}" width="{w}" height="{h}"/>',
              f'<rect class="t-hdr" x="{x}" y="{y}" width="{w}" height="{b["hdr"]}"/>',
-             f'<text class="t-title" x="{x + w / 2:.1f}" y="{y + 17}" text-anchor="middle">{esc(b["name"])}</text>']
+             f'<text class="t-title" x="{x + w / 2:.1f}" y="{y + 17}" text-anchor="middle">{esc(b["label"])}</text>']
         if b["sub"]:
             g.append(f'<text class="t-sub" x="{x + w / 2:.1f}" y="{y + 31}" text-anchor="middle">{esc(b["sub"])}</text>')
         ry = y + b["hdr"] + TOP + 12
@@ -357,28 +363,28 @@ def sql_organism(o, tables):
         tw = max(len(c["type"]) for c in t["columns"])
         lines = [f"    {c['name'].ljust(w)}  {c['type'].ljust(tw)}{'' if c['null'] else '  NOT NULL'}".rstrip()
                  for c in t["columns"]]
-        out.append(f"CREATE TABLE {n} (\n" + ",\n".join(lines) + "\n);")
+        out.append(f"CREATE TABLE {t['sql']} (\n" + ",\n".join(lines) + "\n);")
         out.append("")
     for n in o["own"]:
         t = tables[n]
-        out.append(f"COMMENT ON TABLE {n} IS '{t['desc'].replace(chr(39), chr(39) * 2)}';")
+        out.append(f"COMMENT ON TABLE {t['sql']} IS '{t['desc'].replace(chr(39), chr(39) * 2)}';")
         for c in t["columns"]:
-            out.append(f"COMMENT ON COLUMN {n}.{c['name']} IS '{c['desc'].replace(chr(39), chr(39) * 2)}';")
+            out.append(f"COMMENT ON COLUMN {t['sql']}.{c['name']} IS '{c['desc'].replace(chr(39), chr(39) * 2)}';")
         out.append("")
     for n in o["own"]:
         t = tables[n]
-        out.append(f"ALTER TABLE {n} ADD CONSTRAINT {t['pk_name']} PRIMARY KEY ({t['columns'][0]['name']});")
+        out.append(f"ALTER TABLE {t['sql']} ADD CONSTRAINT {t['pk_name']} PRIMARY KEY ({t['columns'][0]['name']});")
         for name, cols in t["uqs"]:
-            out.append(f"ALTER TABLE {n} ADD CONSTRAINT {name} UNIQUE ({', '.join(cols)});")
+            out.append(f"ALTER TABLE {t['sql']} ADD CONSTRAINT {name} UNIQUE ({', '.join(cols)});")
         for name, expr in t["cks"]:
-            out.append(f"ALTER TABLE {n} ADD CONSTRAINT {name} CHECK ({expr});")
+            out.append(f"ALTER TABLE {t['sql']} ADD CONSTRAINT {name} CHECK ({expr});")
     out.append("")
     for n in o["own"]:
         t = tables[n]
         for name, c in t["fks"]:
             if not c["ext"]:
-                out.append(f"ALTER TABLE {n} ADD CONSTRAINT {name} FOREIGN KEY ({c['name']})"
-                           f" REFERENCES {c['ref']} ({c['ref']}Key);")
+                out.append(f"ALTER TABLE {t['sql']} ADD CONSTRAINT {name} FOREIGN KEY ({c['name']})"
+                           f" REFERENCES {tables[c['ref']]['sql']} ({c['ref']}Key);")
     seeds = seed_order(o["own"], tables)
     if seeds:
         out.append("")
@@ -388,7 +394,7 @@ def sql_organism(o, tables):
             cols = t["columns"]
             for i, r in enumerate(t["rows"], 1):
                 vals = [str(i)] + [sql_value(c, v) for c, v in zip(cols[1:], r)]
-                out.append(f"INSERT INTO {n} ({', '.join(c['name'] for c in cols)}) VALUES ({', '.join(vals)});")
+                out.append(f"INSERT INTO {t['sql']} ({', '.join(c['name'] for c in cols)}) VALUES ({', '.join(vals)});")
         out.append("COMMIT;")
     return "\n".join(out) + "\n"
 
@@ -401,8 +407,8 @@ def sql_links(tables):
         for n in o["own"]:
             for name, c in tables[n]["fks"]:
                 if c["ext"]:
-                    lines.append(f"ALTER TABLE {n} ADD CONSTRAINT {name} FOREIGN KEY ({c['name']})"
-                                 f" REFERENCES {c['ref']} ({c['ref']}Key);")
+                    lines.append(f"ALTER TABLE {tables[n]['sql']} ADD CONSTRAINT {name} FOREIGN KEY ({c['name']})"
+                                 f" REFERENCES {tables[c['ref']]['sql']} ({c['ref']}Key);")
         if lines:
             out.append(f"-- organizm {o['id']}: {o['title']}")
             out += lines
@@ -415,16 +421,17 @@ def sql_drop(tables):
            "-- Uwaga: kasuje też dane w tych tabelach.", ""]
     for o in reversed(ORGANIZMY):
         for n in reversed(o["own"]):
-            out.append(f"DROP TABLE {n} CASCADE CONSTRAINTS PURGE;")
+            out.append(f"DROP TABLE {tables[n]['sql']} CASCADE CONSTRAINTS PURGE;")
     return "\n".join(out) + "\n"
 
 
 # ───────────── strona HTML ─────────────
 def tchip(name, tables, org_id):
     t = tables[name]
+    q = t["sql"]
     if t["org"] == org_id:
-        return f'<button type="button" class="tchip" data-t="{name}">{name}</button>'
-    return f'<a class="tchip ext" href="#o{t["org"]}/{name}" title="Organizm {t["org"]}">{name}</a>'
+        return f'<button type="button" class="tchip" data-t="{q}">{q}</button>'
+    return f'<a class="tchip ext" href="#o{t["org"]}/{q}" title="Organizm {t["org"]}">{q}</a>'
 
 
 def key_cell(c, t, tables):
@@ -433,9 +440,9 @@ def key_cell(c, t, tables):
         out.append('<span class="kb kb-p">PK</span>')
     if "ref" in c:
         parent = tables[c["ref"]]
-        target = (f'<a href="#o{parent["org"]}/{parent["name"]}">{parent["name"]}</a> '
+        target = (f'<a href="#o{parent["org"]}/{parent["sql"]}">{parent["sql"]}</a> '
                   f'<span class="dim">(organizm {parent["org"]})</span>' if c["ext"]
-                  else f'<button type="button" class="linkish" data-t="{parent["name"]}">{parent["name"]}</button>')
+                  else f'<button type="button" class="linkish" data-t="{parent["sql"]}">{parent["sql"]}</button>')
         out.append(f'<span class="kb kb-f">FK</span> → {target}')
     if any(c["name"] in u for _, u in t["uqs"]):
         out.append('<span class="kb kb-u">UQ</span>')
@@ -482,8 +489,8 @@ def table_card(t, tables):
     if t["cks"]:
         conds = "; ".join(f'<code>{esc(expr)}</code>' for _, expr in t["cks"])
         extra.append(f'<p class="cnote">Warunki poprawności: {conds}</p>')
-    return (f'<article class="tcard" id="t-{t["name"]}" data-t="{t["name"]}">'
-            f'<header class="tcard-h"><h3 class="mono">{esc(t["name"])}</h3>{kind}</header>'
+    return (f'<article class="tcard" id="t-{t["sql"]}" data-t="{t["sql"]}">'
+            f'<header class="tcard-h"><h3 class="mono">{esc(t["sql"])}</h3>{kind}</header>'
             f'<p class="tdesc">{esc(t["desc"])}</p>'
             f'<div class="tscroll"><table class="ct"><thead><tr><th>Kolumna</th><th>Typ</th><th>Klucz</th><th>Opis</th>'
             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
@@ -504,7 +511,7 @@ def org_section(o, tables, warnings):
     ext = ""
     if o["ext"]:
         items = "".join(
-            f'<li><a href="#o{tables[e]["org"]}/{e}" class="mono">{e}</a> – organizm {tables[e]["org"]}: '
+            f'<li><a href="#o{tables[e]["org"]}/{tables[e]["sql"]}" class="mono">{tables[e]["sql"]}</a> – organizm {tables[e]["org"]}: '
             f'{esc(next(p["title"] for p in ORGANIZMY if p["id"] == tables[e]["org"]))}</li>' for e in o["ext"])
         ext = (f'<section class="block"><h3 class="eyebrow">Połączenia z innymi organizmami</h3>'
                f'<p class="hint">Szare ramki na diagramie. Klucze obce do nich są w pliku 99_polaczenia_miedzy_organizmami.sql, '
@@ -514,13 +521,16 @@ def org_section(o, tables, warnings):
     cards = "".join(table_card(tables[tn], tables) for tn in o["own"])
     sql = esc(sql_organism(o, tables))
     stage = ETAPY[o["stage"]]
+    db_hint = (f'<p class="db-hint">W bazie Oracle wpisz <b class="mono">{prefix(o["id"])}</b> w wyszukiwarkę tabel '
+               f'(Database Actions → Navigator), żeby zobaczyć tylko tabele tego organizmu.</p>'
+               if PRZEDROSTEK_TABEL else "")
     return f'''
 <section class="view org" id="o{o["id"]}" data-org="{o["id"]}" aria-labelledby="h-o{o["id"]}">
   <nav class="crumbs" aria-label="Nawigacja organizmów"><a class="back" href="#start">← Wszystkie organizmy</a>
     <span class="crumb-pn">{pn}{nn}</span></nav>
   <p class="eyebrow">Organizm {o["id"]} z {n} · {o["stage"]}. {esc(stage)}</p>
   <h2 class="h1" id="h-o{o["id"]}" tabindex="-1">{esc(o["title"])}</h2>
-  <p class="lede">{esc(o["short"])}</p>
+  <p class="lede">{esc(o["short"])}</p>{db_hint}
   <div class="qa">
     <section class="qa-box"><h3 class="eyebrow">Co to jest w szerszym kontekście?</h3><p>{esc(o["context"])}</p></section>
     <section class="qa-box"><h3 class="eyebrow">Jakie mogą być warianty? → tabele</h3><ul class="variants">{variants}</ul></section>
@@ -547,16 +557,23 @@ def overview(tables):
     for key, name in ETAPY.items():
         cards = []
         for o in [p for p in ORGANIZMY if p["stage"] == key]:
-            names = ", ".join(o["own"])
+            names = ", ".join(tables[n]["sql"] for n in o["own"])
             cards.append(f'<a class="ocard" href="#o{o["id"]}"><span class="onum">{o["id"]}</span>'
                          f'<span class="otitle">{esc(o["title"])}</span><span class="oshort">{esc(o["short"])}</span>'
                          f'<span class="otabs mono">{len(o["own"])} tabel: {esc(names)}</span></a>')
         groups.append(f'<section class="stage"><h3 class="stage-h"><span class="stage-k">{key}</span>{esc(name)}</h3>'
                       f'<div class="ocards">{"".join(cards)}</div></section>')
-    lecturer = "".join(f'<li><span class="mono">{esc(a)}</span> – {esc(b)}</li>' for a, b in SCHEMAT_PROWADZACEGO)
+    lecturer = []
+    for a, b in SCHEMAT_PROWADZACEGO:
+        in_db = (f' <span class="dim">(w bazie <span class="mono">{tables[a]["sql"]}</span>)</span>'
+                 if a in tables and tables[a]["sql"] != a else "")
+        lecturer.append(f'<li><span class="mono">{esc(a)}</span>{in_db} – {esc(b)}</li>')
+    lecturer = "".join(lecturer)
     todo = "".join(f'<li><b>{esc(a)}</b> <span class="dim">(warstwa {w}: {esc(z)})</span></li>' for a, w, z in DO_ROZPISANIA)
     total = sum(len(o["own"]) for o in ORGANIZMY)
     links = esc(sql_links(tables))
+    prefix_li = (f'<li><span class="lg-mk">{prefix(1)}</span> przedrostek nazwy tabeli w bazie: ORG i numer organizmu – tabele jednego '
+                 'organizmu stoją na liście obok siebie</li>' if PRZEDROSTEK_TABEL else "")
     return f'''
 <section class="view" id="start" aria-labelledby="h-start">
   <p class="eyebrow">Projekt bazy danych · model tabel</p>
@@ -579,6 +596,7 @@ def overview(tables):
     <ul class="legend">
       <li><span class="lg-mk">P</span> klucz główny</li><li><span class="lg-mk">F</span> klucz obcy</li>
       <li><span class="lg-mk">U</span> wartość unikalna</li><li><span class="lg-mk">*</span> kolumna wymagana (NOT NULL)</li>
+      {prefix_li}
       <li><svg width="70" height="18" aria-hidden="true"><path class="lg-line" d="M4 9H62"/><path class="lg-line" d="M17 9L4 2M17 9L4 9M17 9L4 16M21 3V15"/><path class="lg-head" d="M66 9L56 4L56 14Z"/></svg> wiele wierszy → jeden wiersz (grot przy tabeli, na którą wskazuje klucz obcy)</li>
       <li><svg width="70" height="18" aria-hidden="true"><path class="lg-line lg-opt" d="M4 9H62"/><path class="lg-head" d="M66 9L56 4L56 14Z"/></svg> linia przerywana: klucz obcy może być pusty</li>
       <li><span class="lg-stub">Tabela</span> szara ramka: tabela z innego organizmu</li>
