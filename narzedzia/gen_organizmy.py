@@ -12,8 +12,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from organizmy import DO_ROZPISANIA, ETAPY, ORGANIZMY, PRZEDROSTEK_TABEL, SCHEMAT_PROWADZACEGO  # noqa: E402
+from opisy_organizmow import ETAPY_OPIS, KONWENCJE, OPISY, SLOWNICZEK, WSPOLNE, WSTEP  # noqa: E402
 
 SQL_DIR = os.path.join(ROOT, "sql", "organizmy")
+DM_DIR = os.path.join(SQL_DIR, "data_modeler")  # same CREATE i klucze – do File → Import → DDL File
 OUT_HTML = os.path.join(ROOT, "web", "organizmy.html")
 
 KIND_LABEL = {
@@ -351,12 +353,14 @@ def seed_order(names, tables):
     return [n for n in order if tables[n]["rows"]]
 
 
-def sql_organism(o, tables):
+def sql_organism(o, tables, seeds=True):
     out = [f"-- Organizm {o['id']}: {o['title']}",
            f"-- {o['short']}",
            "-- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.",
            "-- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.",
            ""]
+    if not seeds:
+        out[3:3] = ["-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy."]
     for n in o["own"]:
         t = tables[n]
         w = max(len(c["name"]) for c in t["columns"])
@@ -385,7 +389,7 @@ def sql_organism(o, tables):
             if not c["ext"]:
                 out.append(f"ALTER TABLE {t['sql']} ADD CONSTRAINT {name} FOREIGN KEY ({c['name']})"
                            f" REFERENCES {tables[c['ref']]['sql']} ({c['ref']}Key);")
-    seeds = seed_order(o["own"], tables)
+    seeds = seed_order(o["own"], tables) if seeds else []
     if seeds:
         out.append("")
         out.append("-- Przykładowe wiersze: w słownikach to warianty, o które pytaliśmy („jakie mogą być warianty?”).")
@@ -497,6 +501,220 @@ def table_card(t, tables):
             f'{"".join(extra)}{rows_block(t, tables)}</article>')
 
 
+# ───────────── opisy organizmów (opisy_organizmow.py) ─────────────
+CODE = re.compile(r"`([^`]+)`")
+KIND_COUNT = {
+    "słownik": ("słownik", "słowniki", "słowników"),
+    "łącząca": ("łącząca", "łączące", "łączących"),
+    "historia": ("historia", "historie", "historii"),
+    "zdarzenia": ("dziennik zdarzeń", "dzienniki zdarzeń", "dzienników zdarzeń"),
+    "migawka": ("stan na dzień", "stany na dzień", "stanów na dzień"),
+}
+
+
+def rich(s):
+    """Tekst opisu: `kod` staje się <code>."""
+    return CODE.sub(lambda m: f"<code>{m.group(1)}</code>", esc(s))
+
+
+def num(n, forms):
+    one, few, many = forms
+    word = one if n == 1 else few if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14) else many
+    return f"{n} {word}"
+
+
+def tref(t):
+    return (f'<a class="tref" href="#o{t["org"]}/{t["sql"]}" title="{esc(t["sql"])} – organizm {t["org"]}">'
+            f'{esc(t["name"])}</a>')
+
+
+def check_desc(tables, warnings):
+    """Opis ma pokrywać tabele organizmu, a nazwy w `kodzie` mają istnieć w modelu."""
+    known = set(tables) | {c["name"] for t in tables.values() for c in t["columns"]}
+    known |= {a for a, _ in SCHEMAT_PROWADZACEGO}  # nazwy ze schematu z zajęć, np. PlatformAPIData
+
+    def words(texts, where):
+        for s in texts:
+            for code in CODE.findall(s):
+                for w in re.findall(r"\b[A-Z][a-z]+(?:[A-Z][A-Za-z]*)+\b", code):
+                    if w not in known:
+                        warnings.append(f"{where}: w opisie jest {w}, a nie ma takiej tabeli ani kolumny")
+
+    words(KONWENCJE + [x for pair in WSPOLNE for x in pair], "opisy wspólne")
+    for o in ORGANIZMY:
+        d = OPISY.get(o["id"])
+        if not d:
+            warnings.append(f"organizm {o['id']}: brak opisu w opisy_organizmow.py")
+            continue
+        described = [n for n, _, _ in d["tabele"]]
+        warnings += [f"organizm {o['id']}: opis pomija tabelę {n}" for n in o["own"] if n not in described]
+        warnings += [f"organizm {o['id']}: opis tabeli {n}, której nie ma w organizmie" for n in described
+                     if n not in o["own"]]
+        words([d["skrot"]] + [x for pair in d["decyzje"] for x in pair] + d["luki"], f"organizm {o['id']}")
+
+
+def desc_plain(o, tables):
+    d = OPISY[o["id"]]
+    about = "".join(f"<p>{rich(p)}</p>" for p in d["o_czym"])
+    rows = "".join(f'<div><dt><b>{esc(name_pl)}</b> {tref(tables[n])}</dt><dd>{rich(text)}</dd></div>'
+                   for n, name_pl, text in d["tabele"] if n in tables)
+    return (f'<div class="dv dv-prosto"><p class="dv-h">Dla każdego</p>'
+            f'<h4 class="dh">O czym jest ten organizm</h4>{about}'
+            f'<h4 class="dh">Przykład</h4><p class="example">{rich(d["przyklad"])}</p>'
+            f'<h4 class="dh">Co zapisujemy – tabela po tabeli</h4><dl class="dl">{rows}</dl>'
+            f'<p class="hint">Nie znasz jakiegoś słowa? Zajrzyj do <a href="#opisy/slowniczek">słowniczka</a>.</p></div>')
+
+
+def org_stats(o, tables):
+    ts = [tables[n] for n in o["own"]]
+    kinds = [num(sum(1 for t in ts if t["kind"] == k), forms) for k, forms in KIND_COUNT.items()
+             if any(t["kind"] == k for t in ts)]
+    fks = [c for t in ts for _, c in t["fks"]]
+    ext = sum(1 for c in fks if c["ext"])
+    return " · ".join([
+        num(len(ts), ("tabela", "tabele", "tabel")) + (f" ({', '.join(kinds)})" if kinds else ""),
+        num(len(fks), ("klucz obcy", "klucze obce", "kluczy obcych")) + (f", w tym {ext} do innych organizmów" if ext else ""),
+        num(sum(len(t["uqs"]) for t in ts), ("klucz unikalny", "klucze unikalne", "kluczy unikalnych")),
+        num(sum(len(t["cks"]) for t in ts), ("warunek CHECK", "warunki CHECK", "warunków CHECK")),
+        num(sum(len(t["rows"] or []) for t in ts), ("wiersz startowy", "wiersze startowe", "wierszy startowych")),
+    ])
+
+
+def fk_label(t, c, tables):
+    p = tables[c["ref"]]
+    label = tref(p)
+    if c["name"] != c["ref"] + "Key":
+        label = f'<code>{esc(c["name"])}</code> → {label}'
+    notes = ["1:1" if c.get("unique") else "N:1"]
+    if c["ref"] == t["name"]:
+        notes.append("ta sama tabela")
+    if c["null"]:
+        notes.append("opcjonalny")
+    if c["ext"]:
+        notes.append(f"organizm {p['org']}")
+    return f'{label} <span class="dim">({", ".join(notes)})</span>'
+
+
+def rel_items(o, tables):
+    items = []
+    for n in o["own"]:
+        t = tables[n]
+        if not t["fks"]:
+            continue
+        line = f'{tref(t)} → ' + "; ".join(fk_label(t, c, tables) for _, c in t["fks"])
+        if t["kind"] == "łącząca" and len(t["fks"]) == 2:
+            (_, a), (_, b) = t["fks"]
+            if not a.get("unique") and not b.get("unique"):
+                line += f' <span class="mn">= {tref(tables[a["ref"]])} M:N {tref(tables[b["ref"]])}</span>'
+            elif a.get("unique") != b.get("unique"):
+                one, many = (b, a) if a.get("unique") else (a, b)
+                line += f' <span class="mn">= {tref(tables[one["ref"]])} 1:N {tref(tables[many["ref"]])}</span>'
+        items.append(f"<li>{line}</li>")
+    return "".join(items)
+
+
+def deps_html(o, tables):
+    uses = [(tables[n], c) for n in o["own"] for _, c in tables[n]["fks"] if c["ext"]]
+    used = sorted(((t, c) for t in tables.values() if t["org"] != o["id"]
+                   for _, c in t["fks"] if tables[c["ref"]]["org"] == o["id"]),
+                  key=lambda tc: (tc[0]["org"], tc[0]["name"]))
+    out = []
+    if uses:
+        lines = "".join(f'<li>{tref(t)}.<code>{esc(c["name"])}</code> → {tref(tables[c["ref"]])} '
+                        f'<span class="dim">(organizm {tables[c["ref"]]["org"]})</span></li>' for t, c in uses)
+        out.append(f'<p>Korzysta z tabel innych organizmów (klucze w pliku 99):</p><ul class="tl">{lines}</ul>')
+    else:
+        out.append("<p>Nie korzysta z tabel innych organizmów.</p>")
+    if used:
+        lines = "".join(f'<li><span class="dim">organizm {t["org"]}:</span> {tref(t)}.<code>{esc(c["name"])}</code> → '
+                        f'{tref(tables[c["ref"]])}</li>' for t, c in used)
+        out.append(f'<p>Korzystają z niego:</p><ul class="tl">{lines}</ul><p class="hint">Zmiana klucza albo usunięcie '
+                   f'tych tabel wymaga zmian w tych organizmach i w pliku 99.</p>')
+    else:
+        out.append("<p>Żaden inny organizm z niego nie korzysta.</p>")
+    return "".join(out)
+
+
+def desc_tech(o, tables):
+    d = OPISY[o["id"]]
+    dec = "".join(f'<li><span class="dec-a">{rich(a)}</span> → {rich(b)}</li>' for a, b in d["decyzje"])
+    gaps = "".join(f"<li>{rich(x)}</li>" for x in d["luki"])
+    gaps = f'<h4 class="dh">Czego baza jeszcze nie pilnuje</h4><ul class="tl">{gaps}</ul>' if gaps else ""
+    rel = rel_items(o, tables)
+    rel = f'<h4 class="dh">Relacje</h4><ul class="tl">{rel}</ul>' if rel else ""
+    return (f'<div class="dv dv-tech"><p class="dv-h">Dla technicznych</p>'
+            f'<p>{rich(d["skrot"])}</p><p class="stats">{org_stats(o, tables)}</p>{rel}'
+            f'<h4 class="dh">Decyzje i skutki</h4><ul class="tl">{dec}</ul>{gaps}'
+            f'<h4 class="dh">Zależności między organizmami</h4>{deps_html(o, tables)}</div>')
+
+
+def desc_block(o, tables):
+    if o["id"] not in OPISY:
+        return ""
+    return (f'<section class="desc" aria-labelledby="d-o{o["id"]}"><div class="desc-bar">'
+            f'<h3 class="eyebrow" id="d-o{o["id"]}">Opis organizmu</h3>'
+            f'<div class="seg" role="group" aria-label="Wersja opisu">'
+            f'<button type="button" data-set-desc="prosto" aria-pressed="false">Dla każdego</button>'
+            f'<button type="button" data-set-desc="tech" aria-pressed="false">Dla technicznych</button>'
+            f'<button type="button" data-set-desc="brak" aria-pressed="false">Ukryj</button></div>'
+            f'<a class="doc-link" href="#opisy/o{o["id"]}">Wszystkie opisy jako dokument →</a></div>'
+            f'{desc_plain(o, tables)}{desc_tech(o, tables)}</section>')
+
+
+def doc_org(o, tables):
+    if o["id"] not in OPISY:
+        return ""
+    return (f'<article class="doc-org" id="opis-o{o["id"]}" aria-labelledby="hd-o{o["id"]}">'
+            f'<h3 class="doc-h" id="hd-o{o["id"]}"><span class="onum">{o["id"]}</span>{esc(o["title"])}</h3>'
+            f'<p class="doc-short">{esc(o["short"])}</p>{desc_plain(o, tables)}{desc_tech(o, tables)}'
+            f'<p class="doc-ask"><b>Pytanie do prowadzącego:</b> {esc(o["question"])}</p>'
+            f'<p class="doc-more"><a href="#o{o["id"]}">Diagram, kolumny i SQL tego organizmu →</a></p></article>')
+
+
+def doc_view(tables):
+    toc, stages = [], []
+    for key, name in ETAPY.items():
+        orgs = [o for o in ORGANIZMY if o["stage"] == key]
+        rng = f"organizm {orgs[0]['id']}" if len(orgs) == 1 else f"organizmy {orgs[0]['id']}–{orgs[-1]['id']}"
+        items = "".join(f'<li value="{o["id"]}"><a href="#opisy/o{o["id"]}">{esc(o["title"])}</a></li>' for o in orgs)
+        toc.append(f'<li><a href="#opisy/etap-{key}"><b>{key}. {esc(name)}</b></a><ol>{items}</ol></li>')
+        stages.append(f'<section class="doc-stage" id="opis-etap-{key}" aria-labelledby="hs-{key}">'
+                      f'<h2 class="stage-h" id="hs-{key}"><span class="stage-k">{key}</span>{esc(name)}</h2>'
+                      f'<p class="stage-d">{esc(ETAPY_OPIS[key])} <span class="dim">({rng})</span></p>'
+                      f'{"".join(doc_org(o, tables) for o in orgs)}</section>')
+    gloss = "".join(f"<div><dt>{esc(a)}</dt><dd>{esc(b)}</dd></div>" for a, b in SLOWNICZEK)
+    conv = "".join(f"<li>{rich(x)}</li>" for x in KONWENCJE)
+    common = "".join(f'<li><span class="dec-a">{rich(a)}</span> → {rich(b)}</li>' for a, b in WSPOLNE)
+    po_co = "".join(f"<p>{esc(p)}</p>" for p in WSTEP["po_co"])
+    return f'''
+<section class="view doc" id="opisy" aria-labelledby="h-opisy">
+  <nav class="crumbs" aria-label="Nawigacja"><a class="back" href="#start">← Wszystkie organizmy</a></nav>
+  <p class="eyebrow">Projekt bazy danych · opisy organizmów</p>
+  <h1 class="h1" id="h-opisy" tabindex="-1">Opisy organizmów</h1>
+  <p class="lede">{esc(WSTEP["lede"])}</p>
+  <div class="doc-bar">
+    <div class="seg" role="group" aria-label="Która wersja opisów">
+      <button type="button" data-set-doc="prosto" aria-pressed="false">Dla każdego</button>
+      <button type="button" data-set-doc="tech" aria-pressed="false">Dla technicznych</button>
+      <button type="button" data-set-doc="oba" aria-pressed="false">Obie wersje</button></div>
+    <button type="button" class="tbtn" data-print>Drukuj albo zapisz jako PDF</button>
+  </div>
+  <nav class="toc" aria-label="Spis treści"><ol class="toc-l">{"".join(toc)}
+    <li><a href="#opisy/slowniczek"><b>Słowniczek</b></a></li></ol></nav>
+  <section class="dv dv-prosto doc-intro" aria-labelledby="h-po-co"><p class="dv-h">Dla każdego</p>
+    <h2 class="h2" id="h-po-co">Po co jest ta baza</h2>{po_co}
+    <h3 class="dh">Jeden przykład przez cały dokument</h3><p class="example">{esc(WSTEP["przyklad"])}</p></section>
+  <section class="dv dv-tech doc-intro" aria-labelledby="h-konw"><p class="dv-h">Dla technicznych</p>
+    <h2 class="h2" id="h-konw">Konwencje</h2><ul class="tl">{conv}</ul>
+    <h3 class="dh">Decyzje wspólne dla wszystkich organizmów</h3><ul class="tl">{common}</ul></section>
+  {"".join(stages)}
+  <section class="doc-gloss" id="opis-slowniczek" aria-labelledby="h-gloss">
+    <h2 class="h2" id="h-gloss">Słowniczek</h2>
+    <p class="hint">Słowa, które pojawiają się w opisach – wyjaśnione bez wiedzy o bazach danych.</p>
+    <dl class="dl gloss">{gloss}</dl></section>
+</section>'''
+
+
 def org_section(o, tables, warnings):
     n = len(ORGANIZMY)
     prev_o = next((p for p in ORGANIZMY if p["id"] == o["id"] - 1), None)
@@ -531,6 +749,7 @@ def org_section(o, tables, warnings):
   <p class="eyebrow">Organizm {o["id"]} z {n} · {o["stage"]}. {esc(stage)}</p>
   <h2 class="h1" id="h-o{o["id"]}" tabindex="-1">{esc(o["title"])}</h2>
   <p class="lede">{esc(o["short"])}</p>{db_hint}
+  {desc_block(o, tables)}
   <div class="qa">
     <section class="qa-box"><h3 class="eyebrow">Co to jest w szerszym kontekście?</h3><p>{esc(o["context"])}</p></section>
     <section class="qa-box"><h3 class="eyebrow">Jakie mogą być warianty? → tabele</h3><ul class="variants">{variants}</ul></section>
@@ -545,11 +764,31 @@ def org_section(o, tables, warnings):
   <section class="block"><h3 class="eyebrow">Tabele organizmu ({len(o["own"])})</h3><div class="cards">{cards}</div></section>
   {ext}
   <section class="block"><h3 class="eyebrow">Na mapie warstw</h3><ul class="plain">{maps}</ul></section>
-  <details class="sqlbox"><summary>SQL tego organizmu – do Oracle i do importu w Data Modeler</summary>
+  <details class="sqlbox"><summary>SQL tego organizmu – do Oracle</summary>
     <div class="sql-bar"><span class="hint mono">sql/organizmy/{o["id"]:02d}_{slug(o["title"])}.sql</span>
-    <button type="button" class="tbtn copy">Kopiuj SQL</button></div><pre class="sql"><code>{sql}</code></pre></details>
+    <button type="button" class="tbtn copy">Kopiuj SQL</button></div>
+    <p class="hint">Do programu Data Modeler (File → Import → DDL File) bierz plik bez przykładowych wierszy: <span class="mono">sql/organizmy/data_modeler/{o["id"]:02d}_{slug(o["title"])}.sql</span> – <a href="#start/data-modeler">jak otworzyć diagram</a>.</p><pre class="sql"><code>{sql}</code></pre></details>
   <nav class="pn-bottom" aria-label="Poprzedni i następny organizm">{pn}{nn}</nav>
 </section>'''
+
+
+DATA_MODELER = '''<section class="block" id="start-data-modeler" aria-labelledby="h-dm">
+    <h3 class="eyebrow" id="h-dm">Diagram w Oracle Data Modeler – jak na zajęciach</h3>
+    <div class="qa">
+      <section class="qa-box"><h4 class="dh">W przeglądarce, bez instalowania</h4>
+        <ol class="steps"><li>Zaloguj się do Database Actions (konto GHOSTJOB).</li>
+        <li>Na stronie startowej (Launchpad) wybierz zakładkę <b>Development</b> → <b>Data Modeler</b>.</li>
+        <li>W zakładce <b>Diagrams</b> kliknij <b>New Diagram</b>.</li>
+        <li>W zakładce <b>Navigator</b> wybierz tabele i wpisz w wyszukiwarkę np. <span class="mono">ORG03_</span>.</li>
+        <li>Przeciągnij tabele na diagram albo kliknij tabelę prawym przyciskiem → <b>Add Object with dependencies to Diagram</b> (doda też tabele połączone z nią kluczami).</li></ol>
+        <p class="hint">Linie między tabelami pojawią się same, bo klucze obce są już w bazie. Diagram zapisuje się w bazie (przy pierwszym użyciu Data Modeler zakłada tabelę <span class="mono">OSDDMW_DIAGRAMS</span>), więc cały zespół widzi te same diagramy.</p></section>
+      <section class="qa-box"><h4 class="dh">W programie Oracle SQL Developer Data Modeler (jak na zdjęciu z zajęć)</h4>
+        <ol class="steps"><li>Wybierz <b>File → Import → DDL File</b>, kliknij <b>+</b> i wskaż plik organizmu z folderu <span class="mono">sql/organizmy/data_modeler/</span>, np. <span class="mono">03_endpointy_i_zwracane_dane.sql</span>.</li>
+        <li>Jeśli program zapyta o rodzaj bazy, wybierz Oracle Database (najnowszą wersję z listy) i zatwierdź <b>OK</b> – powstanie model relacyjny z diagramem.</li>
+        <li>Jeśli tabele nachodzą na siebie: prawy klik na tle diagramu → <b>Auto Layout</b>.</li></ol>
+        <p class="hint">Pliki w <span class="mono">data_modeler/</span> mają same tabele i klucze, bez przykładowych wierszy. Plik <span class="mono">wszystkie_organizmy.sql</span> daje cały model naraz, razem z kluczami między organizmami.</p></section>
+    </div>
+    <p class="hint">Kroki według dokumentacji Oracle – nie sprawdziliśmy ich jeszcze w samym programie.</p></section>'''
 
 
 def overview(tables):
@@ -580,6 +819,7 @@ def overview(tables):
   <h1 class="h1" id="h-start" tabindex="-1">Organizmy tabel – od źródła danych</h1>
   <p class="lede">Zaczynamy od platformy, która dostarcza dane, i idziemy ich drogą aż do Trust Score. Każdy etap to osobny
   „organizm” – kilka tabel relacyjnych, które działają razem. Razem {len(ORGANIZMY)} organizmów i {total} tabel.</p>
+  <a class="to-doc" href="#opisy"><b>Opisy organizmów →</b><span>Każdy organizm opisany prostym językiem dla każdego i krótko dla osób technicznych – do czytania i druku.</span></a>
   <div class="qa">
     <section class="qa-box"><h3 class="eyebrow">Jak powstał każdy organizm</h3>
       <p>Przy każdej tabeli zadawaliśmy dwa pytania:</p>
@@ -602,6 +842,7 @@ def overview(tables):
       <li><span class="lg-stub">Tabela</span> szara ramka: tabela z innego organizmu</li>
     </ul></section>
   {"".join(groups)}
+  {DATA_MODELER}
   <section class="block"><h3 class="eyebrow">Jeszcze nierozpisane – po uwagach prowadzącego, tym samym sposobem</h3>
     <ul class="plain">{todo}</ul></section>
   <details class="sqlbox"><summary>SQL połączeń między organizmami (99_polaczenia_miedzy_organizmami.sql)</summary>
@@ -611,7 +852,8 @@ def overview(tables):
 
 
 def nav_html():
-    items = [f'<a class="pill" href="#start" data-nav="start">Przegląd</a>']
+    items = ['<a class="pill" href="#start" data-nav="start">Przegląd</a>',
+             '<a class="pill" href="#opisy" data-nav="opisy">Opisy</a>']
     for o in ORGANIZMY:
         items.append(f'<a class="pill" href="#o{o["id"]}" data-nav="o{o["id"]}" title="{esc(o["title"])}">{o["id"]}</a>')
     return "".join(items)
@@ -620,7 +862,8 @@ def nav_html():
 def main():
     tables = build_model()
     warnings = []
-    sections = [overview(tables)] + [org_section(o, tables, warnings) for o in ORGANIZMY]
+    check_desc(tables, warnings)
+    sections = [overview(tables), doc_view(tables)] + [org_section(o, tables, warnings) for o in ORGANIZMY]
     os.makedirs(SQL_DIR, exist_ok=True)
     for old in os.listdir(SQL_DIR):
         if old.endswith(".sql"):
@@ -632,7 +875,18 @@ def main():
         f.write(sql_links(tables))
     with open(os.path.join(SQL_DIR, "usun_wszystkie_tabele.sql"), "w", encoding="utf-8") as f:
         f.write(sql_drop(tables))
-    titles = {f"o{o['id']}": f"{o['id']}. {o['title']}" for o in ORGANIZMY}
+    os.makedirs(DM_DIR, exist_ok=True)
+    for old in os.listdir(DM_DIR):
+        if old.endswith(".sql"):
+            os.remove(os.path.join(DM_DIR, old))
+    for o in ORGANIZMY:
+        with open(os.path.join(DM_DIR, f"{o['id']:02d}_{slug(o['title'])}.sql"), "w", encoding="utf-8") as f:
+            f.write(sql_organism(o, tables, seeds=False))
+    with open(os.path.join(DM_DIR, "wszystkie_organizmy.sql"), "w", encoding="utf-8") as f:
+        f.write("-- Cały model naraz: wszystkie organizmy i klucze obce między nimi – do Data Modeler.\n\n"
+                + "\n".join(sql_organism(o, tables, seeds=False) for o in ORGANIZMY) + "\n" + sql_links(tables))
+    titles = {"opisy": "Opisy organizmów"}
+    titles.update({f"o{o['id']}": f"{o['id']}. {o['title']}" for o in ORGANIZMY})
     tpl = open(os.path.join(HERE, "template_organizmy.html"), encoding="utf-8").read()
     for key in ("__NAV__", "__SECTIONS__", "__TITLES__"):
         assert tpl.count(key) == 1, key

@@ -191,7 +191,8 @@ ORGANIZMY = [
                 kol("VersionLabel", "VARCHAR2(10)", "Oznaczenie wersji, np. v2"),
                 kol("ReleaseDate", "DATE", "Kiedy wersja weszła"),
                 kol("RetirementDate", "DATE", "Kiedy platforma wyłączy tę wersję", pusta=True),
-            ], (1, 2), rodzaj="historia", unikalne=[("PlatformAPIKey", "VersionLabel")]),
+            ], (1, 2), rodzaj="historia", unikalne=[("PlatformAPIKey", "VersionLabel")],
+                warunki=["RetirementDate IS NULL OR RetirementDate >= ReleaseDate"]),
             slownik("EnvironmentType", "Rodzaj środowiska API.", ["Testowe (sandbox)", "Produkcyjne"], (0, 3),
                     dlugosc=30, opis_nazwy="Nazwa środowiska"),
             tabela("APIEnvironment", 5, "Środowisko danej wersji API z własnym adresem i limitem zapytań.", [
@@ -489,7 +490,7 @@ ORGANIZMY = [
                 kol("ValidFrom", "DATE", "Od kiedy"),
                 kol("ValidTo", "DATE", "Do kiedy (puste = nadal)", pusta=True),
             ], (2, 1), rodzaj="łącząca", unikalne=[("AgencyEmployerKey", "ClientEmployerKey", "ValidFrom")],
-                warunki=["AgencyEmployerKey <> ClientEmployerKey"]),
+                warunki=["AgencyEmployerKey <> ClientEmployerKey", "ValidTo IS NULL OR ValidTo >= ValidFrom"]),
             slownik("EvidenceType", "Rodzaj dowodu powiązania.",
                     ["Zgodny NIP", "Podobna nazwa", "Ta sama domena strony www", "Ten sam adres",
                      "Dokument przesłany przez firmę"], (0, 2), opis_nazwy="Nazwa rodzaju dowodu"),
@@ -717,7 +718,8 @@ ORGANIZMY = [
                 kol("TextHash", "VARCHAR2(64)", "Skrót treści – szybkie porównanie wersji"),
                 kol("ValidFrom", "TIMESTAMP", "Od kiedy treść była taka"),
                 kol("ValidTo", "TIMESTAMP", "Do kiedy (puste = aktualna)", pusta=True),
-            ], (2, 1), rodzaj="historia", unikalne=[("JobPostingKey", "VersionNumber")]),
+            ], (2, 1), rodzaj="historia", unikalne=[("JobPostingKey", "VersionNumber")],
+                warunki=["ValidTo IS NULL OR ValidTo > ValidFrom"]),
             tabela("BoilerplatePattern", 6, "Powtarzalny fragment tekstu do rozpoznania w ogłoszeniach.", [
                 fk("BoilerplateType", "Rodzaj fragmentu"),
                 kol("PatternText", "VARCHAR2(1000)", "Treść albo wzorzec fragmentu"),
@@ -1065,7 +1067,7 @@ ORGANIZMY = [
                 kol("ValidFrom", "DATE", "Od kiedy używana"),
                 kol("ValidTo", "DATE", "Do kiedy (puste = obecna)", pusta=True),
             ], (1, 0), rodzaj="historia", unikalne=[("ScoringMethodTypeKey", "MethodVersion")],
-                wartosci=[(1, "1.0", "2026-12-01", None)]),
+                warunki=["ValidTo IS NULL OR ValidTo >= ValidFrom"], wartosci=[(1, "1.0", "2026-12-01", None)]),
             tabela("ScoringWeight", 6, "Waga sygnału w danej metodzie – tabela łącząca z wartością.", [
                 fk("ScoringMethod", "Metoda"),
                 fk("SignalType", "Sygnał"),

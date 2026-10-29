@@ -16,9 +16,9 @@ Etap obecny: **model tabel** – po uwagach prowadzącego zaczynamy od źródła
 | `docs/mapa-warstw.txt` | Mapa jako czysty tekst z identyfikatorami (np. `W3-P7`) – do wspólnego pliku z poprawkami |
 | `docs/img/` | Obrazy: cała struktura, każda warstwa, DFD poziomu 1, droga zgłoszenia |
 | `web/index.html` | Klikalna mapa: cała struktura → warstwa → szczegóły kafelka (otwórz w przeglądarce) |
-| `web/organizmy.html` | **Model tabel**: 18 organizmów od platformy źródłowej do Trust Score – diagramy jak w Data Modeler, opisy kolumn, warianty, pytania do prowadzącego, SQL |
-| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…` – `18_…`), połączenia między organizmami (`99_…`) i `usun_wszystkie_tabele.sql` |
-| `narzedzia/` | Źródło treści (`data.py`, `organizmy.py`) i generatory stron, rysunków oraz SQL |
+| `web/organizmy.html` | **Model tabel**: 18 organizmów od platformy źródłowej do Trust Score – diagramy jak w Data Modeler, opisy kolumn, warianty, pytania do prowadzącego, SQL. Widok **Opisy** (`organizmy.html#opisy`): każdy organizm opisany prostym językiem i krótko dla technicznych – do czytania i druku |
+| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…` – `18_…`), połączenia między organizmami (`99_…`) i `usun_wszystkie_tabele.sql`; w `data_modeler/` te same tabele bez przykładowych wierszy – do importu w Data Modeler |
+| `narzedzia/` | Źródło treści (`data.py`, `organizmy.py`, `opisy_organizmow.py`) i generatory stron, rysunków oraz SQL |
 
 ## Model tabel – organizmy
 
@@ -39,7 +39,16 @@ Konwencja jak na schemacie z zajęć: tabele po angielsku w PascalCase (`SourceP
 
 Jeszcze nierozpisane (po uwagach prowadzącego, tym samym sposobem): moderacja i odwołania, wnioski RODO, odznaka i raporty publiczne, personel i audyt, parametry i harmonogram, pamięć zapytań do AI.
 
-Wszystkie skrypty z `sql/organizmy/` zostały uruchomione w testowej bazie Oracle AI Database 26ai (118 tabel, bez błędów). Można je uruchomić w SQL Developer (VS Code albo przeglądarka). Można też spróbować zaimportować je do Oracle SQL Developer Data Modeler (File → Import → DDL File), żeby dostać diagram w narzędziu prowadzącego – tego importu jeszcze nie sprawdzaliśmy.
+**Opisy organizmów** – widok „Opisy” na stronie (`web/organizmy.html#opisy`) i blok „Opis organizmu” w każdym organizmie. Każdy organizm jest opisany dwa razy: *dla każdego* (o czym jest, przykład, każda tabela prostym językiem; przez wszystkie organizmy idzie jeden zmyślony przykład firmy „Przykład Logistyka”) i *dla technicznych* (relacje, decyzje projektowe i ich skutki, czego baza jeszcze nie pilnuje, zależności między organizmami). Teksty są w `narzedzia/opisy_organizmow.py`; relacje i liczby generator wylicza sam.
+
+Wszystkie skrypty z `sql/organizmy/` zostały uruchomione w testowej bazie Oracle AI Database 26ai (118 tabel, bez błędów) i są założone we wspólnej bazie Oracle Cloud (bez pliku 99). Można je uruchomić w SQL Developer (VS Code albo przeglądarka).
+
+### Diagram w Oracle Data Modeler (jak na zajęciach)
+
+- **W przeglądarce, bez instalowania:** Database Actions → Launchpad → zakładka *Development* → *Data Modeler* → w zakładce *Diagrams* kliknij *New Diagram* → w zakładce *Navigator* wybierz tabele i wpisz `ORG03_` → przeciągnij tabele na diagram albo prawy klik → *Add Object with dependencies to Diagram*. Linie między tabelami pojawią się same, bo klucze obce są w bazie. Diagramy zapisują się w bazie (przy pierwszym użyciu Data Modeler zakłada tabelę `OSDDMW_DIAGRAMS`), więc cały zespół widzi te same.
+- **W programie Oracle SQL Developer Data Modeler:** *File → Import → DDL File* → `+` → plik z `sql/organizmy/data_modeler/` (np. `03_endpointy_i_zwracane_dane.sql`) → OK. Jeśli tabele nachodzą na siebie: prawy klik na tle diagramu → *Auto Layout*. `wszystkie_organizmy.sql` daje cały model naraz, razem z kluczami między organizmami.
+
+Kroki według dokumentacji Oracle – w samym programie ich jeszcze nie sprawdziliśmy.
 
 ## Warstwy
 
