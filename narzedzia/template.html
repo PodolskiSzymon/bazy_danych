@@ -49,6 +49,11 @@ h1 {
   line-height: 1.1; letter-spacing: -0.012em; margin: 6px 0 10px; text-wrap: balance;
 }
 .lede { margin: 0 0 18px; max-width: 65ch; font-size: 16px; }
+.to-model { display: inline-flex; flex-direction: column; gap: 2px; margin: 0 0 18px; padding: 10px 14px; border: 1px solid #a8953f;
+  border-radius: 10px; background: color-mix(in srgb, #d9c55a 16%, var(--surface)); color: var(--ink); text-decoration: none; }
+.to-model b { color: var(--program); }
+.to-model span { font-size: 13.5px; color: var(--muted); }
+.to-model:hover { box-shadow: 0 0 0 3px color-mix(in srgb, #a8953f 25%, transparent); }
 .mono { font-family: var(--font-mono); }
 .k-person { --k: var(--person); }
 .k-sys { --k: var(--system); }
@@ -366,6 +371,7 @@ html.locked { overflow: hidden; }
         <p class="eyebrow">Projekt bazy danych · osoby, programy i zbiory</p>
         <h1 id="view-title" tabindex="-1">Ghost-Job Scanner w sześciu warstwach</h1>
         <p class="lede">Każda warstwa zapisuje tylko własne zbiory, a cudze jedynie czyta. Kliknij warstwę, żeby zobaczyć jej kafelki i to, co robi każdy z nich.</p>
+        <a class="to-model" href="organizmy.html"><b>Model tabel: organizmy od źródła danych →</b><span>18 osobnych grup tabel relacyjnych – od platformy, jej API i endpointów do Trust Score</span></a>
         ${legend({ gate: true })}
       </header>
       <div class="svgwrap">${mapSvg(null)}</div>`;

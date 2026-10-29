@@ -12,6 +12,12 @@ Wklej ten plik na początku nowej rozmowy i napisz, co chcesz dalej zrobić.
 ## Zadanie od prowadzącego
 Wypisać **wszystkie osoby** korzystające z infrastruktury i **wszystkie zbiory danych**, z których korzystają – zanim powstanie SQL. Prowadzący każe traktować **programy jak ludzi** (każdy program = pracownik z jednym zadaniem). Na kolejnych zajęciach będzie mówił, co poprawić lub dodać.
 
+## Uwagi prowadzącego po pierwszym mockupie
+- **Zacząć od źródła danych** – od platformy, która dostarcza dane. Jego przykład (Data Modeler): `SourcePlatform` (SourcePlatformKey NUMBER(2), SourcePlatformName VARCHAR2(30), MainHomePage VARCHAR2(50)) ← `PlatformAPI` (PlatformAPIKey, SourcePlatformKey, APITypeKey, DataFormatKey) → `APIType`, `DataFormat`; `PlatformAPIData` (PlatformAPIDataKey, PlatformAPIKey, DataName). Brakowało endpointów – dodaliśmy je.
+- **Każdy etap = wiele tabel relacyjnych, które działają razem** („organizm”). Przy każdej tabeli pytamy: **co to jest w szerszym kontekście?** i **jakie mogą być warianty?** – wariant, który się powtarza albo zmienia, dostaje własną tabelę (słownik, tabela łącząca, historia).
+- Organizmy są **na razie osobne** (prowadzący nanosi poprawki, potem łączymy). Konwencja: PascalCase po angielsku, `<Tabela>Key` NUMBER, klucz obcy o tej samej nazwie co klucz, do którego prowadzi.
+- Stan: 18 organizmów, 118 tabel – `narzedzia/organizmy.py` → `web/organizmy.html` i `sql/organizmy/` (sprawdzone w Oracle 26ai). Jeszcze nierozpisane: moderacja i odwołania, RODO, odznaka i raporty publiczne, personel i audyt, parametry i harmonogram, pamięć zapytań do AI.
+
 ## Ustalenia projektowe (już przyjęte)
 1. **Program = osoba = konto w bazie** z uprawnieniami (GRANT). „Czyta/Zapisuje” = uprawnienia.
 2. **Jeden zbiór – jeden właściciel**: do zbioru pisze dokładnie jeden program, reszta czyta. Zmiany w cudzym zbiorze (np. usunięcie danych z RODO) idą jako zlecenie do właściciela. Jedyny wyjątek: `task_queue` (każdy wrzuca własne zlecenia).
@@ -32,6 +38,7 @@ zielony = osoba · granatowy = system zewnętrzny · niebieski = nasz program ·
 - Dokument z rysunkami warstw: https://claude.ai/artifact/VfRSCXDk94Q6kNwiW1mbUH
 - Klikalna strona (mapa → warstwa → szczegóły, mini-mapa, linki `#warstwa-1`…`#warstwa-6`): https://claude.ai/artifact/UMrirDyWtNnRGee2rqNTjh
 - Pliki u mnie: `ghost-job-scanner-mapa.html` (strona offline), `ghost-job-scanner-mapa.txt` (wersja tekstowa z identyfikatorami).
+- Repozytorium: `web/index.html` (mapa warstw), `web/organizmy.html` (model tabel – organizmy), `sql/organizmy/` (skrypty Oracle).
 - Identyfikatory: `W3-P7` = warstwa 3, program 7; Ź = źródło, P = program, Z = zbiór. Poprawki od prowadzącego zapisujemy z identyfikatorem.
 
 ## Otwarte decyzje grupy

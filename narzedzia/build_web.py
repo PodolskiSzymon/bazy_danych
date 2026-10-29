@@ -1,4 +1,5 @@
-"""Buduje web/index.html (samodzielna strona) z data.py i template.html.
+"""Buduje web/index.html (mapa warstw) z data.py i template.html oraz web/organizmy.html i sql/organizmy/
+(organizmy tabel) z organizmy.py.
 
 Użycie: python narzedzia/build_web.py
 """
@@ -16,3 +17,4 @@ page = ('<!doctype html>\n<html lang="pl">\n<head>\n<meta charset="utf-8">\n'
 out = os.path.join(HERE, "..", "web", "index.html")
 open(out, "w", encoding="utf-8").write(page)
 print("zapisano", os.path.normpath(out))
+subprocess.run([sys.executable, os.path.join(HERE, "gen_organizmy.py")], check=True)
