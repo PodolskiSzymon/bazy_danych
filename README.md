@@ -2,7 +2,7 @@
 
 Projekt na przedmiot **Podstawy baz danych**: system wykrywający widmowe ogłoszenia o pracę („ghost jobs”) i zjawisko CV Harvesting. Platformy z ogłoszeniami (pracuj.pl, OLX) wpinają nasz kod i przesyłają dane przez API, a kandydaci zgłaszają wynik rekrutacji. Na tej podstawie liczymy **Trust Score** pracodawcy.
 
-Etap obecny: **projekt na papierze, przed SQL** – wszystkie osoby (w tym programy traktowane jak ludzie) i wszystkie zbiory danych.
+Etap obecny: **model tabel** – po uwagach prowadzącego zaczynamy od źródła danych (platformy) i każdy etap rozpisujemy na osobny „organizm”: grupę powiązanych tabel relacyjnych. Wcześniejsza mapa programów i zbiorów zostaje jako opis działania systemu.
 
 ![Cała struktura – sześć warstw](docs/img/mapa-calosc.png)
 
@@ -16,7 +16,30 @@ Etap obecny: **projekt na papierze, przed SQL** – wszystkie osoby (w tym progr
 | `docs/mapa-warstw.txt` | Mapa jako czysty tekst z identyfikatorami (np. `W3-P7`) – do wspólnego pliku z poprawkami |
 | `docs/img/` | Obrazy: cała struktura, każda warstwa, DFD poziomu 1, droga zgłoszenia |
 | `web/index.html` | Klikalna mapa: cała struktura → warstwa → szczegóły kafelka (otwórz w przeglądarce) |
-| `narzedzia/` | Źródło treści (`data.py`) i generatory strony oraz rysunków |
+| `web/organizmy.html` | **Model tabel**: 18 organizmów od platformy źródłowej do Trust Score – diagramy jak w Data Modeler, opisy kolumn, warianty, pytania do prowadzącego, SQL |
+| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…` – `18_…`), połączenia między organizmami (`99_…`) i `usun_wszystkie_tabele.sql` |
+| `narzedzia/` | Źródło treści (`data.py`, `organizmy.py`) i generatory stron, rysunków oraz SQL |
+
+## Model tabel – organizmy
+
+Strona `web/organizmy.html` (link jest też na górze mapy warstw). Każdy organizm odpowiada na dwa pytania:
+
+1. **Co to jest w szerszym kontekście?** – np. platforma to każde źródło ofert pracy, nie tylko portal.
+2. **Jakie mogą być warianty?** – każdy wariant, który się powtarza albo zmienia, dostaje własną tabelę: słownik (np. `PlatformType`), tabelę łączącą wiele do wielu (np. `PlatformMarket`) albo historię (np. `PartnerAgreement`).
+
+Konwencja jak na schemacie z zajęć: tabele po angielsku w PascalCase (`SourcePlatform`), klucz główny `<Tabela>Key` typu `NUMBER`, klucz obcy nazywa się tak samo jak klucz, do którego prowadzi. Organizmy są na razie osobne – tabela z innego organizmu jest na diagramie szarą ramką, a klucze obce między organizmami są w osobnym pliku `sql/organizmy/99_polaczenia_miedzy_organizmami.sql`.
+
+| Etap | Organizmy |
+|---|---|
+| A. Źródło danych | 1 Platforma źródłowa · 2 API platformy · 3 Endpointy i zwracane dane · 4 Odbiór danych z platformy |
+| B. Firma | 5 Konto firmy na platformie · 6 Firma w rejestrach publicznych · 7 Powiązanie kont z firmą |
+| C. Ogłoszenie | 8 Ogłoszenie i miejsce pracy · 9 Warunki zatrudnienia · 10 Wymagania i obowiązki · 11 Historia i treść ogłoszenia · 12 Podobne ogłoszenia i rodziny |
+| D. Kandydat i zgłoszenia | 13 Kandydat, aplikacje i zgody · 14 Zgłoszenie wyniku rekrutacji · 15 Weryfikacja zgłoszenia · 16 Wykrywanie nadużyć |
+| E. Ocena firmy | 17 Sygnały o firmie · 18 Trust Score i publikacja |
+
+Jeszcze nierozpisane (po uwagach prowadzącego, tym samym sposobem): moderacja i odwołania, wnioski RODO, odznaka i raporty publiczne, personel i audyt, parametry i harmonogram, pamięć zapytań do AI.
+
+Wszystkie skrypty z `sql/organizmy/` zostały uruchomione w testowej bazie Oracle AI Database 26ai (118 tabel, bez błędów). Można je uruchomić w SQL Developer (VS Code albo przeglądarka). Można też spróbować zaimportować je do Oracle SQL Developer Data Modeler (File → Import → DDL File), żeby dostać diagram w narzędziu prowadzącego – tego importu jeszcze nie sprawdzaliśmy.
 
 ## Warstwy
 
@@ -83,10 +106,10 @@ Każdy program ma nazwę, która mówi, co robi (wzór: *kto + co*). Taki sam je
 
 ## Jak zmieniać treść
 
-Treść kafelków jest w `narzedzia/data.py`, długie opisy „Rola” źródeł i programów w `narzedzia/roles.py` (powiązania czyta/zapisuje w `narzedzia/gen_html.py`). Po zmianie:
+Treść kafelków jest w `narzedzia/data.py`, długie opisy „Rola” źródeł i programów w `narzedzia/roles.py` (powiązania czyta/zapisuje w `narzedzia/gen_html.py`). Organizmy tabel są w `narzedzia/organizmy.py` – tam nanosimy poprawki prowadzącego (tabela, kolumna, typ, klucz obcy, miejsce na diagramie). Generator sam pilnuje spójności: klucz obcy musi wskazywać istniejącą tabelę, a jego typ jest brany z klucza głównego tej tabeli. Po zmianie:
 
 ```bash
-python narzedzia/build_web.py      # odświeża web/index.html
+python narzedzia/build_web.py      # odświeża web/index.html, web/organizmy.html i sql/organizmy/
 python narzedzia/gen_diagramy.py   # DFD poziomu 1 i droga zgłoszenia (narzedzia/diagramy.html)
 node narzedzia/render_img.js       # zapisuje obrazy w docs/img/ (wymaga playwright)
 ```
