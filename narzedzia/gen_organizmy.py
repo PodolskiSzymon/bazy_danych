@@ -546,18 +546,33 @@ def check_desc(tables, warnings):
         if not d:
             warnings.append(f"organizm {o['id']}: brak opisu w opisy_organizmow.py")
             continue
-        described = [n for n, _, _ in d["tabele"]]
+        described = [row[0] for row in d["tabele"]]
         warnings += [f"organizm {o['id']}: opis pomija tabelę {n}" for n in o["own"] if n not in described]
         warnings += [f"organizm {o['id']}: opis tabeli {n}, której nie ma w organizmie" for n in described
                      if n not in o["own"]]
         words([d["skrot"]] + [x for pair in d["decyzje"] for x in pair] + d["luki"], f"organizm {o['id']}")
 
 
+def data_example(ex=None):
+    """Przykład na danych przy opisie tabeli: krótki tekst i małe tabelki z wierszami."""
+    if not ex:
+        return ""
+    parts = [f'<p class="ex-h">{rich(ex["wstep"])}</p>']
+    for caption, cols, rows in ex["tabele"]:
+        head = "".join(f"<th>{esc(c)}</th>" for c in cols)
+        body = "".join("<tr>" + "".join(f"<td>{esc(v)}</td>" for v in r) + "</tr>" for r in rows)
+        parts.append(f'<div class="tscroll"><table class="vt ex-t"><caption>{esc(caption)}</caption>'
+                     f'<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>')
+    if ex.get("koniec"):
+        parts.append(f'<p class="ex-h">{rich(ex["koniec"])}</p>')
+    return f'<div class="ex-data">{"".join(parts)}</div>'
+
+
 def desc_plain(o, tables):
     d = OPISY[o["id"]]
     about = "".join(f"<p>{rich(p)}</p>" for p in d["o_czym"])
-    rows = "".join(f'<div><dt><b>{esc(name_pl)}</b> {tref(tables[n])}</dt><dd>{rich(text)}</dd></div>'
-                   for n, name_pl, text in d["tabele"] if n in tables)
+    rows = "".join(f'<div><dt><b>{esc(name_pl)}</b> {tref(tables[n])}</dt><dd>{rich(text)}{data_example(*ex)}</dd></div>'
+                   for n, name_pl, text, *ex in d["tabele"] if n in tables)
     return (f'<div class="dv dv-prosto"><p class="dv-h">Dla każdego</p>'
             f'<h4 class="dh">O czym jest ten organizm</h4>{about}'
             f'<h4 class="dh">Przykład</h4><p class="example">{rich(d["przyklad"])}</p>'

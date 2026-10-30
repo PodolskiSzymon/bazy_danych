@@ -115,7 +115,8 @@ WSPOLNE = [
 # Opisy organizmów. Klucz to numer organizmu.
 #   o_czym   – akapity „o czym jest ten organizm”,
 #   przyklad – ciąg dalszy wspólnego przykładu,
-#   tabele   – (tabela, nazwa po polsku, opis) – każda tabela organizmu dokładnie raz,
+#   tabele   – (tabela, nazwa po polsku, opis[, przykład na danych]) – każda tabela organizmu dokładnie raz;
+#              przykład: {"wstep": tekst, "tabele": [(podpis, kolumny, wiersze)], "koniec": tekst},
 #   skrot    – jedno-dwa zdania dla technicznych,
 #   decyzje  – (decyzja, skutek),
 #   luki     – czego baza jeszcze nie pilnuje.
@@ -145,7 +146,17 @@ OPISY = {
              "Sześć rodzajów: portal z ofertami pracy, serwis ogłoszeń drobnych, agregator ofert (serwis, który zbiera "
              "oferty z innych serwisów), serwis społecznościowy, publiczny urząd pracy i strona kariery firmy. Każda "
              "platforma wskazuje jeden rodzaj. Rodzaje są w osobnej tabeli, żeby każdy był zawsze zapisany tak samo i "
-             "żeby nowy rodzaj można było dopisać jednym wierszem, bez przebudowy bazy."),
+             "żeby nowy rodzaj można było dopisać jednym wierszem, bez przebudowy bazy.",
+             {"wstep": "Przykład na danych. Tabela rodzajów (PlatformType) ma 6 wierszy – każdy rodzaj ma swój numer:",
+              "tabele": [
+                  ("ORG01_PlatformType", ["PlatformTypeKey", "PlatformTypeName"],
+                   [(1, "Portal z ofertami pracy"), (2, "Serwis ogłoszeń drobnych"), (3, "Agregator ofert"),
+                    (4, "Serwis społecznościowy"), (5, "Publiczny urząd pracy"), (6, "Strona kariery firmy (ATS)")]),
+                  ("ORG01_SourcePlatform – w kolumnie PlatformTypeKey jest tylko numer rodzaju",
+                   ["SourcePlatformKey", "SourcePlatformName", "PlatformTypeKey", "co to znaczy"],
+                   [(1, "pracuj.pl", 1, "portal z ofertami pracy"), (2, "OLX", 2, "serwis ogłoszeń drobnych")]),
+              ],
+              "koniec": "Gdy dojdzie np. strona „Kariera” jakiejś firmy, dostaje w SourcePlatform numer rodzaju 6. Gdy pojawi się zupełnie nowy rodzaj, np. aplikacja mobilna z ofertami pracy, wystarczy jeden nowy wiersz w PlatformType: 7 – „Aplikacja mobilna z ofertami”. Żadnej tabeli nie trzeba przebudowywać."}),
             ("PlatformDomain", "Adresy stron platform",
              "Jedna platforma może działać pod kilkoma adresami, np. pracuj.pl i it.pracuj.pl. Jeden wiersz to jeden "
              "adres; jeden z adresów platformy oznaczamy jako główny. Ten sam adres nie może należeć do dwóch "
