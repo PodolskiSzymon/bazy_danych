@@ -1,11 +1,12 @@
 -- Organizm 11: Historia i treść ogłoszenia
 -- Co działo się z ogłoszeniem w czasie i jak zmieniała się jego treść.
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
--- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy.
+-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy
+-- i bez indeksów warunkowych (nie są potrzebne do diagramu).
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
 CREATE TABLE ORG11_EventSource (
-    EventSourceKey   NUMBER(2)     NOT NULL,
+    EventSourceKey   NUMBER(1)     NOT NULL,
     EventSourceName  VARCHAR2(40)  NOT NULL
 );
 
@@ -15,36 +16,38 @@ CREATE TABLE ORG11_PostingEventType (
 );
 
 CREATE TABLE ORG11_PostingEvent (
-    PostingEventKey      NUMBER(12)  NOT NULL,
-    JobPostingKey        NUMBER(10)  NOT NULL,
+    PostingEventKey      NUMBER(10)  NOT NULL,
+    JobPostingKey        NUMBER(9)   NOT NULL,
     PostingEventTypeKey  NUMBER(2)   NOT NULL,
-    EventSourceKey       NUMBER(2)   NOT NULL,
+    EventSourceKey       NUMBER(1)   NOT NULL,
     OccurredAt           TIMESTAMP   NOT NULL,
-    DataDeliveryKey      NUMBER(10)
+    DataDeliveryKey      NUMBER(10),
+    SystemUserKey        NUMBER(7)
 );
 
 CREATE TABLE ORG11_PostingVersion (
-    PostingVersionKey  NUMBER(11)     NOT NULL,
-    JobPostingKey      NUMBER(10)     NOT NULL,
+    PostingVersionKey  NUMBER(9)      NOT NULL,
+    JobPostingKey      NUMBER(9)      NOT NULL,
     VersionNumber      NUMBER(3)      NOT NULL,
     VersionTitle       VARCHAR2(200)  NOT NULL,
     OriginalText       CLOB           NOT NULL,
     CleanText          CLOB,
     TextHash           VARCHAR2(64)   NOT NULL,
     ValidFrom          TIMESTAMP      NOT NULL,
-    ValidTo            TIMESTAMP
+    ValidTo            TIMESTAMP,
+    IsCurrent          NUMBER(1)      NOT NULL
 );
 
 CREATE TABLE ORG11_BoilerplatePattern (
     BoilerplatePatternKey  NUMBER(6)       NOT NULL,
     BoilerplateTypeKey     NUMBER(2)       NOT NULL,
     PatternText            VARCHAR2(1000)  NOT NULL,
-    EmployerKey            NUMBER(8)
+    EmployerKey            NUMBER(7)
 );
 
 CREATE TABLE ORG11_VersionBoilerplate (
-    VersionBoilerplateKey  NUMBER(12)  NOT NULL,
-    PostingVersionKey      NUMBER(11)  NOT NULL,
+    VersionBoilerplateKey  NUMBER(10)  NOT NULL,
+    PostingVersionKey      NUMBER(9)   NOT NULL,
     BoilerplatePatternKey  NUMBER(6)   NOT NULL
 );
 
@@ -68,8 +71,9 @@ COMMENT ON COLUMN ORG11_PostingEvent.PostingEventTypeKey IS 'Co się stało';
 COMMENT ON COLUMN ORG11_PostingEvent.EventSourceKey IS 'Skąd wiemy';
 COMMENT ON COLUMN ORG11_PostingEvent.OccurredAt IS 'Kiedy';
 COMMENT ON COLUMN ORG11_PostingEvent.DataDeliveryKey IS 'W której dostawie przyszła informacja';
+COMMENT ON COLUMN ORG11_PostingEvent.SystemUserKey IS 'Kto wpisał zdarzenie ręcznie (puste = platforma albo program)';
 
-COMMENT ON TABLE ORG11_PostingVersion IS 'Wersja treści ogłoszenia – każda edycja to nowy wiersz.';
+COMMENT ON TABLE ORG11_PostingVersion IS 'Wersja treści ogłoszenia – każda edycja to nowy wiersz, aktualna jest jedna.';
 COMMENT ON COLUMN ORG11_PostingVersion.PostingVersionKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG11_PostingVersion.JobPostingKey IS 'Ogłoszenie';
 COMMENT ON COLUMN ORG11_PostingVersion.VersionNumber IS 'Numer wersji (1, 2, 3…)';
@@ -79,6 +83,7 @@ COMMENT ON COLUMN ORG11_PostingVersion.CleanText IS 'Treść bez stopek i klauzu
 COMMENT ON COLUMN ORG11_PostingVersion.TextHash IS 'Skrót treści – szybkie porównanie wersji';
 COMMENT ON COLUMN ORG11_PostingVersion.ValidFrom IS 'Od kiedy treść była taka';
 COMMENT ON COLUMN ORG11_PostingVersion.ValidTo IS 'Do kiedy (puste = aktualna)';
+COMMENT ON COLUMN ORG11_PostingVersion.IsCurrent IS '1 = wersja aktualna';
 
 COMMENT ON TABLE ORG11_BoilerplatePattern IS 'Powtarzalny fragment tekstu do rozpoznania w ogłoszeniach.';
 COMMENT ON COLUMN ORG11_BoilerplatePattern.BoilerplatePatternKey IS 'Klucz główny – numer wiersza';
@@ -102,7 +107,9 @@ ALTER TABLE ORG11_PostingEventType ADD CONSTRAINT ORG11_PostingEventType_Posting
 ALTER TABLE ORG11_PostingEvent ADD CONSTRAINT ORG11_PostingEvent_PK PRIMARY KEY (PostingEventKey);
 ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_PK PRIMARY KEY (PostingVersionKey);
 ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_UN UNIQUE (JobPostingKey, VersionNumber);
+ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
 ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_CK1 CHECK (ValidTo IS NULL OR ValidTo > ValidFrom);
+ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_CK2 CHECK (IsCurrent = 1 OR ValidTo IS NOT NULL);
 ALTER TABLE ORG11_BoilerplatePattern ADD CONSTRAINT ORG11_BoilerplatePattern_PK PRIMARY KEY (BoilerplatePatternKey);
 ALTER TABLE ORG11_VersionBoilerplate ADD CONSTRAINT ORG11_VersionBoilerplate_PK PRIMARY KEY (VersionBoilerplateKey);
 ALTER TABLE ORG11_VersionBoilerplate ADD CONSTRAINT ORG11_VersionBoilerplate_UN UNIQUE (PostingVersionKey, BoilerplatePatternKey);

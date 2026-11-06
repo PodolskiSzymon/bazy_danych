@@ -9,19 +9,19 @@ CREATE TABLE ORG14_ReportOutcome (
 );
 
 CREATE TABLE ORG14_RecruitmentReport (
-    RecruitmentReportKey   NUMBER(11)  NOT NULL,
-    CandidatePseudonymKey  NUMBER(10)  NOT NULL,
-    JobPostingKey          NUMBER(10)  NOT NULL,
+    RecruitmentReportKey   NUMBER(9)   NOT NULL,
+    CandidatePseudonymKey  NUMBER(9)   NOT NULL,
+    JobPostingKey          NUMBER(9)   NOT NULL,
     ReportOutcomeKey       NUMBER(2)   NOT NULL,
     RecruitmentStageKey    NUMBER(2)   NOT NULL,
-    ReportChannelKey       NUMBER(2)   NOT NULL,
-    ReminderKey            NUMBER(11),
+    ReportChannelKey       NUMBER(1)   NOT NULL,
+    ReminderKey            NUMBER(10),
     ReportedAt             TIMESTAMP   NOT NULL
 );
 
 CREATE TABLE ORG14_Reminder (
-    ReminderKey        NUMBER(11)  NOT NULL,
-    ApplicationKey     NUMBER(12)  NOT NULL,
+    ReminderKey        NUMBER(10)  NOT NULL,
+    ApplicationKey     NUMBER(10)  NOT NULL,
     ReminderStatusKey  NUMBER(2)   NOT NULL,
     ReminderNumber     NUMBER(1)   NOT NULL,
     SentAt             TIMESTAMP   NOT NULL
@@ -34,7 +34,7 @@ CREATE TABLE ORG14_RecruitmentStage (
 );
 
 CREATE TABLE ORG14_ReportChannel (
-    ReportChannelKey   NUMBER(2)     NOT NULL,
+    ReportChannelKey   NUMBER(1)     NOT NULL,
     ReportChannelName  VARCHAR2(40)  NOT NULL
 );
 
@@ -82,6 +82,7 @@ ALTER TABLE ORG14_ReportOutcome ADD CONSTRAINT ORG14_ReportOutcome_ReportOutcome
 ALTER TABLE ORG14_RecruitmentReport ADD CONSTRAINT ORG14_RecruitmentReport_PK PRIMARY KEY (RecruitmentReportKey);
 ALTER TABLE ORG14_Reminder ADD CONSTRAINT ORG14_Reminder_PK PRIMARY KEY (ReminderKey);
 ALTER TABLE ORG14_Reminder ADD CONSTRAINT ORG14_Reminder_UN UNIQUE (ApplicationKey, ReminderNumber);
+ALTER TABLE ORG14_Reminder ADD CONSTRAINT ORG14_Reminder_CK1 CHECK (ReminderNumber >= 1);
 ALTER TABLE ORG14_RecruitmentStage ADD CONSTRAINT ORG14_RecruitmentStage_PK PRIMARY KEY (RecruitmentStageKey);
 ALTER TABLE ORG14_RecruitmentStage ADD CONSTRAINT ORG14_RecruitmentStage_RecruitmentStageName_UN UNIQUE (RecruitmentStageName);
 ALTER TABLE ORG14_ReportChannel ADD CONSTRAINT ORG14_ReportChannel_PK PRIMARY KEY (ReportChannelKey);

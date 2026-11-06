@@ -1,7 +1,8 @@
 -- Organizm 4: Odbiór danych z platformy
 -- Każda dostawa danych: kiedy, którym endpointem, z jakim skutkiem – i surowa kopia każdego rekordu.
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
--- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy.
+-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy
+-- i bez indeksów warunkowych (nie są potrzebne do diagramu).
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
 CREATE TABLE ORG04_DeliveryMode (

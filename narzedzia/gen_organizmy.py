@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from organizmy import DO_ROZPISANIA, ETAPY, ORGANIZMY, PRZEDROSTEK_TABEL, SCHEMAT_PROWADZACEGO  # noqa: E402
-from opisy_organizmow import ETAPY_OPIS, KONWENCJE, OPISY, SLOWNICZEK, WSPOLNE, WSTEP  # noqa: E402
+from opisy_organizmow import ETAPY_OPIS, KONWENCJE, OPISY, SLOWNICZEK, WNIOSKI, WNIOSKI_WSTEP, WSPOLNE, WSTEP  # noqa: E402
 
 SQL_DIR = os.path.join(ROOT, "sql", "organizmy")
 DM_DIR = os.path.join(SQL_DIR, "data_modeler")  # same CREATE i klucze – do File → Import → DDL File
@@ -21,11 +21,17 @@ OUT_HTML = os.path.join(ROOT, "web", "organizmy.html")
 KIND_LABEL = {
     "słownik": "słownik wariantów",
     "łącząca": "tabela łącząca (wiele do wielu)",
+    "przypisanie": "przypisanie w czasie (od–do, flaga)",
     "historia": "historia zmian",
     "zdarzenia": "dziennik zdarzeń",
     "migawka": "stan na dany dzień",
 }
-SQL_WORDS = {"IS", "NULL", "NOT", "OR", "AND", "BETWEEN", "IN"}
+SQL_WORDS = {"IS", "NULL", "NOT", "OR", "AND", "BETWEEN", "IN", "REGEXP_LIKE"}
+
+
+def sql_words(expr):
+    """Słowa z wyrażenia SQL bez tekstów w apostrofach – do sprawdzenia, czy kolumny istnieją."""
+    return re.findall(r"[A-Za-z_][A-Za-z0-9_]*", re.sub(r"'[^']*'", "", expr))
 
 
 def esc(s):
@@ -54,6 +60,8 @@ def build_model():
                 raise SystemExit(f"Tabela {t['name']} występuje w dwóch organizmach")
             t["org"] = o["id"]
             t["sql"] = prefix(o["id"]) + t["name"]
+            # klucz tak duży, jak trzeba: tyle cyfr, ile ma szacowana największa liczba wierszy
+            t["digits"] = len(str(t["rows_est"]))
             tables[t["name"]] = t
             o["own"].append(t["name"])
     for t in tables.values():
@@ -84,13 +92,21 @@ def build_model():
         uqs = [(f"{t['sql']}_{u[0]}_UN", u) for u in singles]
         uqs += [(f"{t['sql']}_UN" if len(multi) == 1 else f"{t['sql']}_UN{i}", u) for i, u in enumerate(multi, 1)]
         t["uqs"] = uqs
-        cks = [(f"{t['sql']}_{c['name']}_CK", f"{c['name']} IN ('T', 'N')") for c in cols if c.get("flag")]
+        cks = [(f"{t['sql']}_{c['name']}_CK", f"{c['name']} IN (0, 1)") for c in cols if c.get("flag")]
         for i, ch in enumerate(t["checks"], 1):
-            for word in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", ch):
+            for word in sql_words(ch):
                 if word not in SQL_WORDS and word not in names:
                     raise SystemExit(f"{t['name']}: warunek „{ch}” – nie ma kolumny {word}")
             cks.append((f"{t['sql']}_CK{i}", ch))
         t["cks"] = cks
+        # unikalne tylko w części wierszy (np. jeden aktualny) – w SQL unikalny indeks funkcyjny
+        uxs = []
+        for i, (cond, ucols) in enumerate(t["unique_when"], 1):
+            for word in sql_words(cond) + ucols:
+                if word not in SQL_WORDS and word not in names:
+                    raise SystemExit(f"{t['name']}: unikalność gdy „{cond}” – nie ma kolumny {word}")
+            uxs.append((f"{t['sql']}_UX" if len(t["unique_when"]) == 1 else f"{t['sql']}_UX{i}", cond, ucols))
+        t["uxs"] = uxs
         fk_cols = [c for c in cols if "ref" in c]
         fks = []
         for c in fk_cols:
@@ -111,9 +127,11 @@ def build_model():
                     if not c["null"]:
                         raise SystemExit(f"{t['name']}: pusta wartość w wymaganej kolumnie {c['name']}")
                     continue
+                if c.get("flag") and v not in (0, 1):
+                    raise SystemExit(f"{t['name']}.{c['name']}: flaga ma wartość {v}, a może mieć tylko 0 albo 1")
                 if "ref" in c:
-                    parent = tables[c["ref"]]
-                    if parent["org"] != t["org"] or not parent["rows"] or not 1 <= v <= len(parent["rows"]):
+                    parent = tables[c["ref"]]  # wiersz może być też w innym organizmie, byle istniał
+                    if not parent["rows"] or not 1 <= v <= len(parent["rows"]):
                         raise SystemExit(f"{t['name']}.{c['name']}: wartość {v} nie wskazuje wiersza w {c['ref']}")
     # tabele z innych organizmów
     for o in ORGANIZMY:
@@ -154,7 +172,8 @@ def make_box(t, stub):
             if c["name"] in uq_cols:
                 mk += "U"
             rows.append((mk, "" if c["null"] else "*", c["name"], disp_type(c["type"])))
-        foot = [f"{t['pk_name']} ({t['columns'][0]['name']})"] + [f"{n} ({', '.join(u)})" for n, u in t["uqs"]]
+        foot = ([f"{t['pk_name']} ({t['columns'][0]['name']})"] + [f"{n} ({', '.join(u)})" for n, u in t["uqs"]]
+                + [f"{n} ({', '.join(u) or 'jeden wiersz'} gdy {cond})" for n, cond, u in t["uxs"]])
         sub = None
     namew = max(len(r[2]) for r in rows)
     typew = max(len(r[3]) for r in rows)
@@ -353,6 +372,11 @@ def seed_order(names, tables):
     return [n for n in order if tables[n]["rows"]]
 
 
+def ux_expr(cond, cols):
+    """Wyrażenie unikalnego indeksu funkcyjnego: wartości tylko w wierszach spełniających warunek."""
+    return ", ".join(f"CASE WHEN {cond} THEN {c} END" for c in cols) or f"CASE WHEN {cond} THEN 1 END"
+
+
 def sql_organism(o, tables, seeds=True):
     out = [f"-- Organizm {o['id']}: {o['title']}",
            f"-- {o['short']}",
@@ -360,7 +384,8 @@ def sql_organism(o, tables, seeds=True):
            "-- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.",
            ""]
     if not seeds:
-        out[3:3] = ["-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy."]
+        out[3:3] = ["-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy",
+                    "-- i bez indeksów warunkowych (nie są potrzebne do diagramu)."]
     for n in o["own"]:
         t = tables[n]
         w = max(len(c["name"]) for c in t["columns"])
@@ -389,6 +414,12 @@ def sql_organism(o, tables, seeds=True):
             if not c["ext"]:
                 out.append(f"ALTER TABLE {t['sql']} ADD CONSTRAINT {name} FOREIGN KEY ({c['name']})"
                            f" REFERENCES {tables[c['ref']]['sql']} ({c['ref']}Key);")
+    uxs = [(tables[n], ux) for n in o["own"] for ux in tables[n]["uxs"]] if seeds else []
+    if uxs:
+        out.append("")
+        out.append("-- Unikalne tylko w części wierszy, np. jeden aktualny wiersz (unikalny indeks funkcyjny).")
+        for t, (name, cond, ucols) in uxs:
+            out.append(f"CREATE UNIQUE INDEX {name} ON {t['sql']} ({ux_expr(cond, ucols)});")
     seeds = seed_order(o["own"], tables) if seeds else []
     if seeds:
         out.append("")
@@ -482,6 +513,11 @@ def rows_block(t, tables):
             f'<thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div></div>')
 
 
+def grp(n):
+    """Liczba z odstępami między tysiącami: 5 000, 1 000 000."""
+    return f"{n:,}".replace(",", "\u00a0")
+
+
 def table_card(t, tables):
     kind = f'<span class="badge">{esc(KIND_LABEL[t["kind"]])}</span>' if t["kind"] else ""
     rows = []
@@ -490,12 +526,18 @@ def table_card(t, tables):
         rows.append(f'<tr><td class="mono cname">{req}{esc(c["name"])}</td><td class="mono ctype">{esc(c["type"])}</td>'
                     f'<td class="ckey">{key_cell(c, t, tables)}</td><td>{esc(c["desc"])}</td></tr>')
     extra = []
+    if t["uxs"]:
+        conds = "; ".join(f'<code>{esc(", ".join(u) or "jeden wiersz")}</code> gdy <code>{esc(cond)}</code>'
+                          for _, cond, u in t["uxs"])
+        extra.append(f'<p class="cnote">Unikalne tylko w części wierszy: {conds}</p>')
     if t["cks"]:
         conds = "; ".join(f'<code>{esc(expr)}</code>' for _, expr in t["cks"])
         extra.append(f'<p class="cnote">Warunki poprawności: {conds}</p>')
     return (f'<article class="tcard" id="t-{t["sql"]}" data-t="{t["sql"]}">'
             f'<header class="tcard-h"><h3 class="mono">{esc(t["sql"])}</h3>{kind}</header>'
             f'<p class="tdesc">{esc(t["desc"])}</p>'
+            f'<p class="tsize">Szacunek: do {grp(t["rows_est"])} wierszy → klucz <span class="mono">NUMBER({t["digits"]})</span>'
+            f' (do {grp(10 ** t["digits"] - 1)})</p>'
             f'<div class="tscroll"><table class="ct"><thead><tr><th>Kolumna</th><th>Typ</th><th>Klucz</th><th>Opis</th>'
             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
             f'{"".join(extra)}{rows_block(t, tables)}</article>')
@@ -509,6 +551,7 @@ KIND_COUNT = {
     "historia": ("historia", "historie", "historii"),
     "zdarzenia": ("dziennik zdarzeń", "dzienniki zdarzeń", "dzienników zdarzeń"),
     "migawka": ("stan na dzień", "stany na dzień", "stanów na dzień"),
+    "przypisanie": ("przypisanie w czasie", "przypisania w czasie", "przypisań w czasie"),
 }
 
 
@@ -541,6 +584,9 @@ def check_desc(tables, warnings):
                         warnings.append(f"{where}: w opisie jest {w}, a nie ma takiej tabeli ani kolumny")
 
     words(KONWENCJE + [x for pair in WSPOLNE for x in pair], "opisy wspólne")
+    for title, text, names in WNIOSKI:
+        warnings += [f"wnioski „{title}”: nie ma tabeli {n}" for n in names if n not in tables]
+        words([text], f"wnioski „{title}”")
     for o in ORGANIZMY:
         d = OPISY.get(o["id"])
         if not d:
@@ -591,6 +637,8 @@ def org_stats(o, tables):
         num(len(fks), ("klucz obcy", "klucze obce", "kluczy obcych")) + (f", w tym {ext} do innych organizmów" if ext else ""),
         num(sum(len(t["uqs"]) for t in ts), ("klucz unikalny", "klucze unikalne", "kluczy unikalnych")),
         num(sum(len(t["cks"]) for t in ts), ("warunek CHECK", "warunki CHECK", "warunków CHECK")),
+        num(sum(len(t["uxs"]) for t in ts), ("indeks unikalny warunkowy", "indeksy unikalne warunkowe",
+                                             "indeksów unikalnych warunkowych")),
         num(sum(len(t["rows"] or []) for t in ts), ("wiersz startowy", "wiersze startowe", "wierszy startowych")),
     ])
 
@@ -617,7 +665,7 @@ def rel_items(o, tables):
         if not t["fks"]:
             continue
         line = f'{tref(t)} → ' + "; ".join(fk_label(t, c, tables) for _, c in t["fks"])
-        if t["kind"] == "łącząca" and len(t["fks"]) == 2:
+        if t["kind"] in ("łącząca", "przypisanie") and len(t["fks"]) == 2:
             (_, a), (_, b) = t["fks"]
             if not a.get("unique") and not b.get("unique"):
                 line += f' <span class="mn">= {tref(tables[a["ref"]])} M:N {tref(tables[b["ref"]])}</span>'
@@ -682,7 +730,8 @@ def doc_org(o, tables):
     return (f'<article class="doc-org" id="opis-o{o["id"]}" aria-labelledby="hd-o{o["id"]}">'
             f'<h3 class="doc-h" id="hd-o{o["id"]}"><span class="onum">{o["id"]}</span>{esc(o["title"])}</h3>'
             f'<p class="doc-short">{esc(o["short"])}</p>{desc_plain(o, tables)}{desc_tech(o, tables)}'
-            f'<p class="doc-ask"><b>Pytanie do prowadzącego:</b> {esc(o["question"])}</p>'
+            f'<div class="doc-ask"><b>{"Pytanie" if len(o["questions"]) == 1 else "Pytania"} do prowadzącego:</b>'
+            f'{questions_html(o)}</div>'
             f'<p class="doc-more"><a href="#o{o["id"]}">Diagram, kolumny i SQL tego organizmu →</a></p></article>')
 
 
@@ -715,6 +764,7 @@ def doc_view(tables):
     <button type="button" class="tbtn" data-print>Drukuj albo zapisz jako PDF</button>
   </div>
   <nav class="toc" aria-label="Spis treści"><ol class="toc-l">{"".join(toc)}
+    <li><a href="#opisy/wnioski"><b>Co zmieniliśmy po uwagach prowadzącego</b></a></li>
     <li><a href="#opisy/slowniczek"><b>Słowniczek</b></a></li></ol></nav>
   <section class="dv dv-prosto doc-intro" aria-labelledby="h-po-co"><p class="dv-h">Dla każdego</p>
     <h2 class="h2" id="h-po-co">Po co jest ta baza</h2>{po_co}
@@ -722,6 +772,7 @@ def doc_view(tables):
   <section class="dv dv-tech doc-intro" aria-labelledby="h-konw"><p class="dv-h">Dla technicznych</p>
     <h2 class="h2" id="h-konw">Konwencje</h2><ul class="tl">{conv}</ul>
     <h3 class="dh">Decyzje wspólne dla wszystkich organizmów</h3><ul class="tl">{common}</ul></section>
+  {lessons_html("opis")}
   {"".join(stages)}
   <section class="doc-gloss" id="opis-slowniczek" aria-labelledby="h-gloss">
     <h2 class="h2" id="h-gloss">Słowniczek</h2>
@@ -730,10 +781,44 @@ def doc_view(tables):
 </section>'''
 
 
+def merged_note(o):
+    if not o["merged"]:
+        return ""
+    a, b = o["merged"][0], o["merged"][-1]
+    return f' · połączony z dawnych organizmów {a}–{b}'
+
+
+def questions_html(o):
+    q = o["questions"]
+    if len(q) == 1:
+        return f"<p>{esc(q[0])}</p>"
+    return '<ol class="plain">' + "".join(f"<li>{esc(x)}</li>" for x in q) + "</ol>"
+
+
+def lessons_html(where):
+    """Wnioski z uwag prowadzącego i co zmieniliśmy w modelu.
+    where="start": krótka lista na przeglądzie; where="opis": pełny tekst w dokumencie z opisami."""
+    if where == "start":
+        items = "".join(f"<li>{esc(title)}</li>" for title, _, _ in WNIOSKI)
+        return (f'<section class="lessons lessons-short" id="start-wnioski" aria-labelledby="h-wn-start">'
+                f'<h3 class="eyebrow" id="h-wn-start">Co zmieniliśmy po uwagach prowadzącego</h3>'
+                f'<ol class="lessons-l">{items}</ol>'
+                f'<p class="doc-more"><a href="#opisy/wnioski">Każda zmiana z opisem i tabelami, których dotyczy →</a></p>'
+                f'</section>')
+    items = []
+    for title, text, names in WNIOSKI:
+        refs = ", ".join(tref(TABLES[n]) for n in names if n in TABLES)
+        refs = f'<p class="lesson-t">Tabele: {refs}</p>' if refs else ""
+        items.append(f"<li><b>{esc(title)}</b><p>{rich(text)}</p>{refs}</li>")
+    return (f'<section class="doc-intro lessons" id="opis-wnioski" aria-labelledby="h-wn-opis">'
+            f'<h2 class="h2" id="h-wn-opis">Co zmieniliśmy po uwagach prowadzącego</h2>'
+            f'<p class="stage-d">{esc(WNIOSKI_WSTEP)}</p><ol class="lessons-l">{"".join(items)}</ol></section>')
+
+
 def org_section(o, tables, warnings):
-    n = len(ORGANIZMY)
-    prev_o = next((p for p in ORGANIZMY if p["id"] == o["id"] - 1), None)
-    next_o = next((p for p in ORGANIZMY if p["id"] == o["id"] + 1), None)
+    i = ORGANIZMY.index(o)
+    prev_o = ORGANIZMY[i - 1] if i > 0 else None
+    next_o = ORGANIZMY[i + 1] if i + 1 < len(ORGANIZMY) else None
     pn = (f'<a class="pn" href="#o{prev_o["id"]}">← {prev_o["id"]}. {esc(prev_o["title"])}</a>' if prev_o
           else '<span></span>')
     nn = (f'<a class="pn nx" href="#o{next_o["id"]}">{next_o["id"]}. {esc(next_o["title"])} →</a>' if next_o
@@ -748,7 +833,7 @@ def org_section(o, tables, warnings):
             f'{esc(next(p["title"] for p in ORGANIZMY if p["id"] == tables[e]["org"]))}</li>' for e in o["ext"])
         ext = (f'<section class="block"><h3 class="eyebrow">Połączenia z innymi organizmami</h3>'
                f'<p class="hint">Szare ramki na diagramie. Klucze obce do nich są w pliku 99_polaczenia_miedzy_organizmami.sql, '
-               f'bo organizmy są na razie osobne.</p><ul class="plain">{items}</ul></section>')
+               f'bo te organizmy nie są jeszcze połączone.</p><ul class="plain">{items}</ul></section>')
     maps = "".join(f'<li><a href="index.html#warstwa-{m["layer"]}">Warstwa {m["layer"]}</a> – {esc(m["what"])}</li>'
                    for m in o["map"])
     cards = "".join(table_card(tables[tn], tables) for tn in o["own"])
@@ -761,7 +846,7 @@ def org_section(o, tables, warnings):
 <section class="view org" id="o{o["id"]}" data-org="{o["id"]}" aria-labelledby="h-o{o["id"]}">
   <nav class="crumbs" aria-label="Nawigacja organizmów"><a class="back" href="#start">← Wszystkie organizmy</a>
     <span class="crumb-pn">{pn}{nn}</span></nav>
-  <p class="eyebrow">Organizm {o["id"]} z {n} · {o["stage"]}. {esc(stage)}</p>
+  <p class="eyebrow">Organizm {o["id"]} · {o["stage"]}. {esc(stage)}{merged_note(o)}</p>
   <h2 class="h1" id="h-o{o["id"]}" tabindex="-1">{esc(o["title"])}</h2>
   <p class="lede">{esc(o["short"])}</p>{db_hint}
   {desc_block(o, tables)}
@@ -775,7 +860,7 @@ def org_section(o, tables, warnings):
     <div class="dg">{render_svg(o, tables, warnings)}</div>
     <p class="sel" aria-live="polite"><span class="dim">Kliknij tabelę na diagramie, żeby zobaczyć jej opis i połączenia.</span></p>
   </section>
-  <aside class="ask"><h3 class="eyebrow">Pytanie do prowadzącego</h3><p>{esc(o["question"])}</p></aside>
+  <aside class="ask"><h3 class="eyebrow">{"Pytanie" if len(o["questions"]) == 1 else "Pytania"} do prowadzącego</h3>{questions_html(o)}</aside>
   <section class="block"><h3 class="eyebrow">Tabele organizmu ({len(o["own"])})</h3><div class="cards">{cards}</div></section>
   {ext}
   <section class="block"><h3 class="eyebrow">Na mapie warstw</h3><ul class="plain">{maps}</ul></section>
@@ -794,14 +879,14 @@ DATA_MODELER = '''<section class="block" id="start-data-modeler" aria-labelledby
         <ol class="steps"><li>Zaloguj się do Database Actions (konto GHOSTJOB).</li>
         <li>Na stronie startowej (Launchpad) wybierz zakładkę <b>Development</b> → <b>Data Modeler</b>.</li>
         <li>W zakładce <b>Diagrams</b> kliknij <b>New Diagram</b>.</li>
-        <li>W zakładce <b>Navigator</b> wybierz tabele i wpisz w wyszukiwarkę np. <span class="mono">ORG03_</span>.</li>
+        <li>W zakładce <b>Navigator</b> wybierz tabele i wpisz w wyszukiwarkę np. <span class="mono">ORG01_</span> (organizm 1).</li>
         <li>Przeciągnij tabele na diagram albo kliknij tabelę prawym przyciskiem → <b>Add Object with dependencies to Diagram</b> (doda też tabele połączone z nią kluczami).</li></ol>
         <p class="hint">Linie między tabelami pojawią się same, bo klucze obce są już w bazie. Diagram zapisuje się w bazie (przy pierwszym użyciu Data Modeler zakłada tabelę <span class="mono">OSDDMW_DIAGRAMS</span>), więc cały zespół widzi te same diagramy.</p></section>
       <section class="qa-box"><h4 class="dh">W programie Oracle SQL Developer Data Modeler (jak na zdjęciu z zajęć)</h4>
-        <ol class="steps"><li>Wybierz <b>File → Import → DDL File</b>, kliknij <b>+</b> i wskaż plik organizmu z folderu <span class="mono">sql/organizmy/data_modeler/</span>, np. <span class="mono">03_endpointy_i_zwracane_dane.sql</span>.</li>
+        <ol class="steps"><li>Wybierz <b>File → Import → DDL File</b>, kliknij <b>+</b> i wskaż plik organizmu z folderu <span class="mono">sql/organizmy/data_modeler/</span>, np. <span class="mono">01_zrodlo_danych_platforma_api_i_endpointy.sql</span>.</li>
         <li>Jeśli program zapyta o rodzaj bazy, wybierz Oracle Database (najnowszą wersję z listy) i zatwierdź <b>OK</b> – powstanie model relacyjny z diagramem.</li>
         <li>Jeśli tabele nachodzą na siebie: prawy klik na tle diagramu → <b>Auto Layout</b>.</li></ol>
-        <p class="hint">Pliki w <span class="mono">data_modeler/</span> mają same tabele i klucze, bez przykładowych wierszy. Plik <span class="mono">wszystkie_organizmy.sql</span> daje cały model naraz, razem z kluczami między organizmami.</p></section>
+        <p class="hint">Pliki w <span class="mono">data_modeler/</span> mają same tabele i klucze – bez przykładowych wierszy i bez indeksów „jeden aktualny” (te są w zwykłych plikach organizmów). Plik <span class="mono">wszystkie_organizmy.sql</span> daje cały model naraz, razem z kluczami między organizmami.</p></section>
     </div>
     <p class="hint">Kroki według dokumentacji Oracle – nie sprawdziliśmy ich jeszcze w samym programie.</p></section>'''
 
@@ -812,7 +897,9 @@ def overview(tables):
         cards = []
         for o in [p for p in ORGANIZMY if p["stage"] == key]:
             names = ", ".join(tables[n]["sql"] for n in o["own"])
-            cards.append(f'<a class="ocard" href="#o{o["id"]}"><span class="onum">{o["id"]}</span>'
+            merged = (f'<span class="omerged">połączony z dawnych {o["merged"][0]}–{o["merged"][-1]}</span>'
+                      if o["merged"] else "")
+            cards.append(f'<a class="ocard" href="#o{o["id"]}"><span class="onum">{o["id"]}</span>{merged}'
                          f'<span class="otitle">{esc(o["title"])}</span><span class="oshort">{esc(o["short"])}</span>'
                          f'<span class="otabs mono">{len(o["own"])} tabel: {esc(names)}</span></a>')
         groups.append(f'<section class="stage"><h3 class="stage-h"><span class="stage-k">{key}</span>{esc(name)}</h3>'
@@ -835,6 +922,7 @@ def overview(tables):
   <p class="lede">Zaczynamy od platformy, która dostarcza dane, i idziemy ich drogą aż do Trust Score. Każdy etap to osobny
   „organizm” – kilka tabel relacyjnych, które działają razem. Razem {len(ORGANIZMY)} organizmów i {total} tabel.</p>
   <a class="to-doc" href="#opisy"><b>Opisy organizmów →</b><span>Każdy organizm opisany prostym językiem dla każdego i krótko dla osób technicznych – do czytania i druku.</span></a>
+  {lessons_html("start")}
   <div class="qa">
     <section class="qa-box"><h3 class="eyebrow">Jak powstał każdy organizm</h3>
       <p>Przy każdej tabeli zadawaliśmy dwa pytania:</p>
@@ -851,6 +939,7 @@ def overview(tables):
     <ul class="legend">
       <li><span class="lg-mk">P</span> klucz główny</li><li><span class="lg-mk">F</span> klucz obcy</li>
       <li><span class="lg-mk">U</span> wartość unikalna</li><li><span class="lg-mk">*</span> kolumna wymagana (NOT NULL)</li>
+      <li><span class="lg-mk">_UX</span> pod tabelą: unikalne tylko w części wierszy, np. jeden aktualny wiersz (flaga 1)</li>
       {prefix_li}
       <li><svg width="70" height="18" aria-hidden="true"><path class="lg-line" d="M4 9H62"/><path class="lg-line" d="M17 9L4 2M17 9L4 9M17 9L4 16M21 3V15"/><path class="lg-head" d="M66 9L56 4L56 14Z"/></svg> wiele wierszy → jeden wiersz (grot przy tabeli, na którą wskazuje klucz obcy)</li>
       <li><svg width="70" height="18" aria-hidden="true"><path class="lg-line lg-opt" d="M4 9H62"/><path class="lg-head" d="M66 9L56 4L56 14Z"/></svg> linia przerywana: klucz obcy może być pusty</li>
@@ -874,8 +963,12 @@ def nav_html():
     return "".join(items)
 
 
+TABLES = {}
+
+
 def main():
     tables = build_model()
+    TABLES.update(tables)
     warnings = []
     check_desc(tables, warnings)
     sections = [overview(tables), doc_view(tables)] + [org_section(o, tables, warnings) for o in ORGANIZMY]

@@ -20,20 +20,23 @@ CREATE TABLE ORG09_SalaryPeriod (
 );
 
 CREATE TABLE ORG09_PostingSalary (
-    PostingSalaryKey  NUMBER(11)    NOT NULL,
-    JobPostingKey     NUMBER(10)    NOT NULL,
+    PostingSalaryKey  NUMBER(9)     NOT NULL,
+    JobPostingKey     NUMBER(9)     NOT NULL,
     ContractTypeKey   NUMBER(2)     NOT NULL,
     SalaryFrom        NUMBER(10,2),
     SalaryTo          NUMBER(10,2),
     CurrencyKey       NUMBER(3),
     SalaryPeriodKey   NUMBER(2),
-    IsGross           CHAR(1)
+    IsGross           NUMBER(1),
+    ValidFrom         TIMESTAMP     NOT NULL,
+    ValidTo           TIMESTAMP,
+    IsCurrent         NUMBER(1)     NOT NULL
 );
 
 CREATE TABLE ORG09_PostingBenefit (
-    PostingBenefitKey  NUMBER(11)  NOT NULL,
-    JobPostingKey      NUMBER(10)  NOT NULL,
-    BenefitKey         NUMBER(4)   NOT NULL
+    PostingBenefitKey  NUMBER(9)  NOT NULL,
+    JobPostingKey      NUMBER(9)  NOT NULL,
+    BenefitKey         NUMBER(4)  NOT NULL
 );
 
 CREATE TABLE ORG09_Benefit (
@@ -49,7 +52,7 @@ CREATE TABLE ORG09_BenefitCategory (
 
 COMMENT ON TABLE ORG09_Currency IS 'Waluta.';
 COMMENT ON COLUMN ORG09_Currency.CurrencyKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN ORG09_Currency.CurrencyCode IS 'Kod waluty ISO, np. PLN';
+COMMENT ON COLUMN ORG09_Currency.CurrencyCode IS 'Kod waluty ISO 4217, np. PLN';
 COMMENT ON COLUMN ORG09_Currency.CurrencyName IS 'Nazwa waluty';
 
 COMMENT ON TABLE ORG09_ContractType IS 'Rodzaj umowy.';
@@ -60,7 +63,7 @@ COMMENT ON TABLE ORG09_SalaryPeriod IS 'Okres, za który podano kwotę.';
 COMMENT ON COLUMN ORG09_SalaryPeriod.SalaryPeriodKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG09_SalaryPeriod.SalaryPeriodName IS 'Nazwa okresu';
 
-COMMENT ON TABLE ORG09_PostingSalary IS 'Umowa z widełkami w ogłoszeniu – jedno ogłoszenie może mieć kilka takich wierszy.';
+COMMENT ON TABLE ORG09_PostingSalary IS 'Umowa z widełkami w ogłoszeniu – kilka umów na ogłoszenie, z historią zmian.';
 COMMENT ON COLUMN ORG09_PostingSalary.PostingSalaryKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG09_PostingSalary.JobPostingKey IS 'Ogłoszenie';
 COMMENT ON COLUMN ORG09_PostingSalary.ContractTypeKey IS 'Rodzaj umowy';
@@ -68,7 +71,10 @@ COMMENT ON COLUMN ORG09_PostingSalary.SalaryFrom IS 'Widełki od (puste = nie po
 COMMENT ON COLUMN ORG09_PostingSalary.SalaryTo IS 'Widełki do';
 COMMENT ON COLUMN ORG09_PostingSalary.CurrencyKey IS 'Waluta (puste, gdy brak kwoty)';
 COMMENT ON COLUMN ORG09_PostingSalary.SalaryPeriodKey IS 'Za jaki okres (puste, gdy brak kwoty)';
-COMMENT ON COLUMN ORG09_PostingSalary.IsGross IS 'Czy kwota jest brutto';
+COMMENT ON COLUMN ORG09_PostingSalary.IsGross IS '1 = kwota brutto, 0 = netto';
+COMMENT ON COLUMN ORG09_PostingSalary.ValidFrom IS 'Od kiedy ogłoszenie podawało te warunki';
+COMMENT ON COLUMN ORG09_PostingSalary.ValidTo IS 'Do kiedy (puste = nadal)';
+COMMENT ON COLUMN ORG09_PostingSalary.IsCurrent IS '1 = warunki aktualne';
 
 COMMENT ON TABLE ORG09_PostingBenefit IS 'Benefit w ogłoszeniu – tabela łącząca ogłoszenia z benefitami.';
 COMMENT ON COLUMN ORG09_PostingBenefit.PostingBenefitKey IS 'Klucz główny – numer wiersza';
@@ -86,14 +92,19 @@ COMMENT ON COLUMN ORG09_BenefitCategory.BenefitCategoryName IS 'Nazwa grupy';
 
 ALTER TABLE ORG09_Currency ADD CONSTRAINT ORG09_Currency_PK PRIMARY KEY (CurrencyKey);
 ALTER TABLE ORG09_Currency ADD CONSTRAINT ORG09_Currency_CurrencyCode_UN UNIQUE (CurrencyCode);
+ALTER TABLE ORG09_Currency ADD CONSTRAINT ORG09_Currency_CK1 CHECK (REGEXP_LIKE(CurrencyCode, '^[A-Z]{3}$'));
 ALTER TABLE ORG09_ContractType ADD CONSTRAINT ORG09_ContractType_PK PRIMARY KEY (ContractTypeKey);
 ALTER TABLE ORG09_ContractType ADD CONSTRAINT ORG09_ContractType_ContractTypeName_UN UNIQUE (ContractTypeName);
 ALTER TABLE ORG09_SalaryPeriod ADD CONSTRAINT ORG09_SalaryPeriod_PK PRIMARY KEY (SalaryPeriodKey);
 ALTER TABLE ORG09_SalaryPeriod ADD CONSTRAINT ORG09_SalaryPeriod_SalaryPeriodName_UN UNIQUE (SalaryPeriodName);
 ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_PK PRIMARY KEY (PostingSalaryKey);
-ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_UN UNIQUE (JobPostingKey, ContractTypeKey);
-ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_IsGross_CK CHECK (IsGross IN ('T', 'N'));
+ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_IsGross_CK CHECK (IsGross IN (0, 1));
+ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
 ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_CK1 CHECK (SalaryFrom IS NULL OR SalaryTo IS NULL OR SalaryFrom <= SalaryTo);
+ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_CK2 CHECK (SalaryFrom >= 0 AND SalaryTo >= 0);
+ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_CK3 CHECK ((SalaryFrom IS NULL AND SalaryTo IS NULL) OR (CurrencyKey IS NOT NULL AND SalaryPeriodKey IS NOT NULL));
+ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_CK4 CHECK (ValidTo IS NULL OR ValidTo > ValidFrom);
+ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_CK5 CHECK (IsCurrent = 1 OR ValidTo IS NOT NULL);
 ALTER TABLE ORG09_PostingBenefit ADD CONSTRAINT ORG09_PostingBenefit_PK PRIMARY KEY (PostingBenefitKey);
 ALTER TABLE ORG09_PostingBenefit ADD CONSTRAINT ORG09_PostingBenefit_UN UNIQUE (JobPostingKey, BenefitKey);
 ALTER TABLE ORG09_Benefit ADD CONSTRAINT ORG09_Benefit_PK PRIMARY KEY (BenefitKey);
@@ -106,6 +117,9 @@ ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_Currency_FK F
 ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_SalaryPeriod_FK FOREIGN KEY (SalaryPeriodKey) REFERENCES ORG09_SalaryPeriod (SalaryPeriodKey);
 ALTER TABLE ORG09_PostingBenefit ADD CONSTRAINT ORG09_PostingBenefit_Benefit_FK FOREIGN KEY (BenefitKey) REFERENCES ORG09_Benefit (BenefitKey);
 ALTER TABLE ORG09_Benefit ADD CONSTRAINT ORG09_Benefit_BenefitCategory_FK FOREIGN KEY (BenefitCategoryKey) REFERENCES ORG09_BenefitCategory (BenefitCategoryKey);
+
+-- Unikalne tylko w części wierszy, np. jeden aktualny wiersz (unikalny indeks funkcyjny).
+CREATE UNIQUE INDEX ORG09_PostingSalary_UX ON ORG09_PostingSalary (CASE WHEN IsCurrent = 1 THEN JobPostingKey END, CASE WHEN IsCurrent = 1 THEN ContractTypeKey END);
 
 -- Przykładowe wiersze: w słownikach to warianty, o które pytaliśmy („jakie mogą być warianty?”).
 INSERT INTO ORG09_Currency (CurrencyKey, CurrencyCode, CurrencyName) VALUES (1, 'PLN', 'złoty');

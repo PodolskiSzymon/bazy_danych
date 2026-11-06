@@ -4,13 +4,13 @@
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
 CREATE TABLE ORG10_RequirementLevel (
-    RequirementLevelKey   NUMBER(2)     NOT NULL,
+    RequirementLevelKey   NUMBER(1)     NOT NULL,
     RequirementLevelName  VARCHAR2(20)  NOT NULL
 );
 
 CREATE TABLE ORG10_PostingResponsibility (
-    PostingResponsibilityKey  NUMBER(11)     NOT NULL,
-    JobPostingKey             NUMBER(10)     NOT NULL,
+    PostingResponsibilityKey  NUMBER(9)      NOT NULL,
+    JobPostingKey             NUMBER(9)      NOT NULL,
     ResponsibilityText        VARCHAR2(400)  NOT NULL,
     ExtractionMethodKey       NUMBER(2)      NOT NULL
 );
@@ -23,13 +23,13 @@ CREATE TABLE ORG10_ProficiencyLevel (
 );
 
 CREATE TABLE ORG10_PostingRequirement (
-    PostingRequirementKey  NUMBER(11)  NOT NULL,
-    JobPostingKey          NUMBER(10)  NOT NULL,
-    SkillKey               NUMBER(6)   NOT NULL,
-    RequirementLevelKey    NUMBER(2)   NOT NULL,
+    PostingRequirementKey  NUMBER(9)  NOT NULL,
+    JobPostingKey          NUMBER(9)  NOT NULL,
+    SkillKey               NUMBER(5)  NOT NULL,
+    RequirementLevelKey    NUMBER(1)  NOT NULL,
     ProficiencyLevelKey    NUMBER(3),
     MinYearsExperience     NUMBER(2),
-    ExtractionMethodKey    NUMBER(2)   NOT NULL
+    ExtractionMethodKey    NUMBER(2)  NOT NULL
 );
 
 CREATE TABLE ORG10_ExtractionMethod (
@@ -43,14 +43,14 @@ CREATE TABLE ORG10_SkillCategory (
 );
 
 CREATE TABLE ORG10_Skill (
-    SkillKey          NUMBER(6)     NOT NULL,
+    SkillKey          NUMBER(5)     NOT NULL,
     SkillName         VARCHAR2(80)  NOT NULL,
     SkillCategoryKey  NUMBER(2)     NOT NULL
 );
 
 CREATE TABLE ORG10_SkillSynonym (
-    SkillSynonymKey  NUMBER(7)     NOT NULL,
-    SkillKey         NUMBER(6)     NOT NULL,
+    SkillSynonymKey  NUMBER(6)     NOT NULL,
+    SkillKey         NUMBER(5)     NOT NULL,
     SynonymText      VARCHAR2(80)  NOT NULL
 );
 
@@ -104,6 +104,7 @@ ALTER TABLE ORG10_ProficiencyLevel ADD CONSTRAINT ORG10_ProficiencyLevel_PK PRIM
 ALTER TABLE ORG10_ProficiencyLevel ADD CONSTRAINT ORG10_ProficiencyLevel_UN UNIQUE (SkillCategoryKey, ProficiencyLevelName);
 ALTER TABLE ORG10_PostingRequirement ADD CONSTRAINT ORG10_PostingRequirement_PK PRIMARY KEY (PostingRequirementKey);
 ALTER TABLE ORG10_PostingRequirement ADD CONSTRAINT ORG10_PostingRequirement_UN UNIQUE (JobPostingKey, SkillKey);
+ALTER TABLE ORG10_PostingRequirement ADD CONSTRAINT ORG10_PostingRequirement_CK1 CHECK (MinYearsExperience >= 0);
 ALTER TABLE ORG10_ExtractionMethod ADD CONSTRAINT ORG10_ExtractionMethod_PK PRIMARY KEY (ExtractionMethodKey);
 ALTER TABLE ORG10_ExtractionMethod ADD CONSTRAINT ORG10_ExtractionMethod_ExtractionMethodName_UN UNIQUE (ExtractionMethodName);
 ALTER TABLE ORG10_SkillCategory ADD CONSTRAINT ORG10_SkillCategory_PK PRIMARY KEY (SkillCategoryKey);
