@@ -1,5 +1,5 @@
 -- Organizm 8: Ogłoszenie i miejsce pracy
--- Samo ogłoszenie: kto je opublikował, kiedy, na jakim poziomie, w jakim trybie i w których miastach.
+-- Samo ogłoszenie: kto je opublikował, kiedy, dla jakich poziomów, w jakich trybach i w których miejscowościach.
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
@@ -15,17 +15,21 @@ CREATE TABLE ORG08_SeniorityLevel (
 );
 
 CREATE TABLE ORG08_JobPosting (
-    JobPostingKey       NUMBER(10)     NOT NULL,
-    EmployerAccountKey  NUMBER(8)      NOT NULL,
+    JobPostingKey       NUMBER(9)      NOT NULL,
+    EmployerAccountKey  NUMBER(7)      NOT NULL,
     ExternalPostingId   VARCHAR2(50)   NOT NULL,
     PostingTitle        VARCHAR2(200)  NOT NULL,
     PostingStatusKey    NUMBER(2)      NOT NULL,
-    SeniorityLevelKey   NUMBER(2),
-    WorkModeKey         NUMBER(2),
     VacancyCount        NUMBER(3),
     PublishedDate       DATE           NOT NULL,
     ExpiryDate          DATE,
     RawRecordKey        NUMBER(12)
+);
+
+CREATE TABLE ORG08_PostingSeniority (
+    PostingSeniorityKey  NUMBER(9)  NOT NULL,
+    JobPostingKey        NUMBER(9)  NOT NULL,
+    SeniorityLevelKey    NUMBER(2)  NOT NULL
 );
 
 CREATE TABLE ORG08_WorkMode (
@@ -33,18 +37,32 @@ CREATE TABLE ORG08_WorkMode (
     WorkModeName  VARCHAR2(30)  NOT NULL
 );
 
+CREATE TABLE ORG08_PostingWorkMode (
+    PostingWorkModeKey  NUMBER(9)  NOT NULL,
+    JobPostingKey       NUMBER(9)  NOT NULL,
+    WorkModeKey         NUMBER(2)  NOT NULL
+);
+
 CREATE TABLE ORG08_PostingLocation (
-    PostingLocationKey  NUMBER(11)  NOT NULL,
-    JobPostingKey       NUMBER(10)  NOT NULL,
-    LocationKey         NUMBER(6)   NOT NULL,
-    IsMainLocation      CHAR(1)     NOT NULL
+    PostingLocationKey  NUMBER(9)  NOT NULL,
+    JobPostingKey       NUMBER(9)  NOT NULL,
+    LocationKey         NUMBER(6)  NOT NULL,
+    IsMainLocation      NUMBER(1)  NOT NULL
 );
 
 CREATE TABLE ORG08_Location (
     LocationKey  NUMBER(6)     NOT NULL,
     CityName     VARCHAR2(80)  NOT NULL,
-    RegionName   VARCHAR2(80),
+    SIMCCode     CHAR(7),
+    RegionKey    NUMBER(3),
     CountryKey   NUMBER(3)     NOT NULL
+);
+
+CREATE TABLE ORG08_Region (
+    RegionKey   NUMBER(3)     NOT NULL,
+    RegionName  VARCHAR2(80)  NOT NULL,
+    RegionCode  CHAR(2),
+    CountryKey  NUMBER(3)     NOT NULL
 );
 
 COMMENT ON TABLE ORG08_PostingStatus IS 'Stan ogłoszenia.';
@@ -62,28 +80,43 @@ COMMENT ON COLUMN ORG08_JobPosting.EmployerAccountKey IS 'Konto, które opubliko
 COMMENT ON COLUMN ORG08_JobPosting.ExternalPostingId IS 'Numer ogłoszenia w serwisie';
 COMMENT ON COLUMN ORG08_JobPosting.PostingTitle IS 'Tytuł (aktualny)';
 COMMENT ON COLUMN ORG08_JobPosting.PostingStatusKey IS 'Stan ogłoszenia';
-COMMENT ON COLUMN ORG08_JobPosting.SeniorityLevelKey IS 'Poziom stanowiska (bywa niepodany)';
-COMMENT ON COLUMN ORG08_JobPosting.WorkModeKey IS 'Tryb pracy (bywa niepodany)';
 COMMENT ON COLUMN ORG08_JobPosting.VacancyCount IS 'Ilu osób szuka';
 COMMENT ON COLUMN ORG08_JobPosting.PublishedDate IS 'Data pierwszej publikacji';
 COMMENT ON COLUMN ORG08_JobPosting.ExpiryDate IS 'Planowana data końca';
 COMMENT ON COLUMN ORG08_JobPosting.RawRecordKey IS 'Rekord, z którego powstało ogłoszenie';
 
+COMMENT ON TABLE ORG08_PostingSeniority IS 'Poziom stanowiska w ogłoszeniu – tabela łącząca, bo ogłoszenie bywa dla kilku poziomów naraz.';
+COMMENT ON COLUMN ORG08_PostingSeniority.PostingSeniorityKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG08_PostingSeniority.JobPostingKey IS 'Ogłoszenie';
+COMMENT ON COLUMN ORG08_PostingSeniority.SeniorityLevelKey IS 'Poziom';
+
 COMMENT ON TABLE ORG08_WorkMode IS 'Tryb pracy.';
 COMMENT ON COLUMN ORG08_WorkMode.WorkModeKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG08_WorkMode.WorkModeName IS 'Nazwa trybu pracy';
+
+COMMENT ON TABLE ORG08_PostingWorkMode IS 'Tryb pracy w ogłoszeniu – tabela łącząca, bo ogłoszenie daje kilka trybów do wyboru.';
+COMMENT ON COLUMN ORG08_PostingWorkMode.PostingWorkModeKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG08_PostingWorkMode.JobPostingKey IS 'Ogłoszenie';
+COMMENT ON COLUMN ORG08_PostingWorkMode.WorkModeKey IS 'Tryb pracy';
 
 COMMENT ON TABLE ORG08_PostingLocation IS 'Miejsce pracy w ogłoszeniu – tabela łącząca ogłoszenia z miejscowościami.';
 COMMENT ON COLUMN ORG08_PostingLocation.PostingLocationKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG08_PostingLocation.JobPostingKey IS 'Ogłoszenie';
 COMMENT ON COLUMN ORG08_PostingLocation.LocationKey IS 'Miejscowość';
-COMMENT ON COLUMN ORG08_PostingLocation.IsMainLocation IS 'Czy to główne miejsce pracy';
+COMMENT ON COLUMN ORG08_PostingLocation.IsMainLocation IS '1 = główne miejsce pracy';
 
-COMMENT ON TABLE ORG08_Location IS 'Miejscowość.';
+COMMENT ON TABLE ORG08_Location IS 'Miejscowość – z urzędowym kodem TERYT, gdy leży w Polsce.';
 COMMENT ON COLUMN ORG08_Location.LocationKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN ORG08_Location.CityName IS 'Miejscowość';
-COMMENT ON COLUMN ORG08_Location.RegionName IS 'Województwo albo region';
+COMMENT ON COLUMN ORG08_Location.CityName IS 'Nazwa miejscowości';
+COMMENT ON COLUMN ORG08_Location.SIMCCode IS 'Identyfikator miejscowości z rejestru TERYT (SIMC), np. 0950463 – Kraków (puste za granicą)';
+COMMENT ON COLUMN ORG08_Location.RegionKey IS 'Województwo albo region (puste, gdy nie wiemy)';
 COMMENT ON COLUMN ORG08_Location.CountryKey IS 'Kraj';
+
+COMMENT ON TABLE ORG08_Region IS 'Województwo albo region – wybierane z listy, a nie wpisywane.';
+COMMENT ON COLUMN ORG08_Region.RegionKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG08_Region.RegionName IS 'Nazwa, np. małopolskie';
+COMMENT ON COLUMN ORG08_Region.RegionCode IS 'Kod województwa z rejestru TERYT, np. 12 (puste za granicą)';
+COMMENT ON COLUMN ORG08_Region.CountryKey IS 'Kraj';
 
 ALTER TABLE ORG08_PostingStatus ADD CONSTRAINT ORG08_PostingStatus_PK PRIMARY KEY (PostingStatusKey);
 ALTER TABLE ORG08_PostingStatus ADD CONSTRAINT ORG08_PostingStatus_PostingStatusName_UN UNIQUE (PostingStatusName);
@@ -93,19 +126,34 @@ ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_PK PRIMARY KEY (Job
 ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_UN UNIQUE (EmployerAccountKey, ExternalPostingId);
 ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_CK1 CHECK (ExpiryDate IS NULL OR ExpiryDate >= PublishedDate);
 ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_CK2 CHECK (VacancyCount > 0);
+ALTER TABLE ORG08_PostingSeniority ADD CONSTRAINT ORG08_PostingSeniority_PK PRIMARY KEY (PostingSeniorityKey);
+ALTER TABLE ORG08_PostingSeniority ADD CONSTRAINT ORG08_PostingSeniority_UN UNIQUE (JobPostingKey, SeniorityLevelKey);
 ALTER TABLE ORG08_WorkMode ADD CONSTRAINT ORG08_WorkMode_PK PRIMARY KEY (WorkModeKey);
 ALTER TABLE ORG08_WorkMode ADD CONSTRAINT ORG08_WorkMode_WorkModeName_UN UNIQUE (WorkModeName);
+ALTER TABLE ORG08_PostingWorkMode ADD CONSTRAINT ORG08_PostingWorkMode_PK PRIMARY KEY (PostingWorkModeKey);
+ALTER TABLE ORG08_PostingWorkMode ADD CONSTRAINT ORG08_PostingWorkMode_UN UNIQUE (JobPostingKey, WorkModeKey);
 ALTER TABLE ORG08_PostingLocation ADD CONSTRAINT ORG08_PostingLocation_PK PRIMARY KEY (PostingLocationKey);
 ALTER TABLE ORG08_PostingLocation ADD CONSTRAINT ORG08_PostingLocation_UN UNIQUE (JobPostingKey, LocationKey);
-ALTER TABLE ORG08_PostingLocation ADD CONSTRAINT ORG08_PostingLocation_IsMainLocation_CK CHECK (IsMainLocation IN ('T', 'N'));
+ALTER TABLE ORG08_PostingLocation ADD CONSTRAINT ORG08_PostingLocation_IsMainLocation_CK CHECK (IsMainLocation IN (0, 1));
 ALTER TABLE ORG08_Location ADD CONSTRAINT ORG08_Location_PK PRIMARY KEY (LocationKey);
-ALTER TABLE ORG08_Location ADD CONSTRAINT ORG08_Location_UN UNIQUE (CityName, RegionName, CountryKey);
+ALTER TABLE ORG08_Location ADD CONSTRAINT ORG08_Location_SIMCCode_UN UNIQUE (SIMCCode);
+ALTER TABLE ORG08_Location ADD CONSTRAINT ORG08_Location_CK1 CHECK (REGEXP_LIKE(SIMCCode, '^[0-9]{7}$'));
+ALTER TABLE ORG08_Region ADD CONSTRAINT ORG08_Region_PK PRIMARY KEY (RegionKey);
+ALTER TABLE ORG08_Region ADD CONSTRAINT ORG08_Region_UN1 UNIQUE (CountryKey, RegionName);
+ALTER TABLE ORG08_Region ADD CONSTRAINT ORG08_Region_UN2 UNIQUE (CountryKey, RegionCode);
+ALTER TABLE ORG08_Region ADD CONSTRAINT ORG08_Region_CK1 CHECK (REGEXP_LIKE(RegionCode, '^[0-9]{2}$'));
 
 ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_PostingStatus_FK FOREIGN KEY (PostingStatusKey) REFERENCES ORG08_PostingStatus (PostingStatusKey);
-ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_SeniorityLevel_FK FOREIGN KEY (SeniorityLevelKey) REFERENCES ORG08_SeniorityLevel (SeniorityLevelKey);
-ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_WorkMode_FK FOREIGN KEY (WorkModeKey) REFERENCES ORG08_WorkMode (WorkModeKey);
+ALTER TABLE ORG08_PostingSeniority ADD CONSTRAINT ORG08_PostingSeniority_JobPosting_FK FOREIGN KEY (JobPostingKey) REFERENCES ORG08_JobPosting (JobPostingKey);
+ALTER TABLE ORG08_PostingSeniority ADD CONSTRAINT ORG08_PostingSeniority_SeniorityLevel_FK FOREIGN KEY (SeniorityLevelKey) REFERENCES ORG08_SeniorityLevel (SeniorityLevelKey);
+ALTER TABLE ORG08_PostingWorkMode ADD CONSTRAINT ORG08_PostingWorkMode_JobPosting_FK FOREIGN KEY (JobPostingKey) REFERENCES ORG08_JobPosting (JobPostingKey);
+ALTER TABLE ORG08_PostingWorkMode ADD CONSTRAINT ORG08_PostingWorkMode_WorkMode_FK FOREIGN KEY (WorkModeKey) REFERENCES ORG08_WorkMode (WorkModeKey);
 ALTER TABLE ORG08_PostingLocation ADD CONSTRAINT ORG08_PostingLocation_JobPosting_FK FOREIGN KEY (JobPostingKey) REFERENCES ORG08_JobPosting (JobPostingKey);
 ALTER TABLE ORG08_PostingLocation ADD CONSTRAINT ORG08_PostingLocation_Location_FK FOREIGN KEY (LocationKey) REFERENCES ORG08_Location (LocationKey);
+ALTER TABLE ORG08_Location ADD CONSTRAINT ORG08_Location_Region_FK FOREIGN KEY (RegionKey) REFERENCES ORG08_Region (RegionKey);
+
+-- Unikalne tylko w części wierszy, np. jeden aktualny wiersz (unikalny indeks funkcyjny).
+CREATE UNIQUE INDEX ORG08_PostingLocation_UX ON ORG08_PostingLocation (CASE WHEN IsMainLocation = 1 THEN JobPostingKey END);
 
 -- Przykładowe wiersze: w słownikach to warianty, o które pytaliśmy („jakie mogą być warianty?”).
 INSERT INTO ORG08_PostingStatus (PostingStatusKey, PostingStatusName) VALUES (1, 'Aktywne');
@@ -123,4 +171,20 @@ INSERT INTO ORG08_WorkMode (WorkModeKey, WorkModeName) VALUES (1, 'Stacjonarna')
 INSERT INTO ORG08_WorkMode (WorkModeKey, WorkModeName) VALUES (2, 'Hybrydowa');
 INSERT INTO ORG08_WorkMode (WorkModeKey, WorkModeName) VALUES (3, 'Zdalna');
 INSERT INTO ORG08_WorkMode (WorkModeKey, WorkModeName) VALUES (4, 'W terenie');
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (1, 'dolnośląskie', '02', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (2, 'kujawsko-pomorskie', '04', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (3, 'lubelskie', '06', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (4, 'lubuskie', '08', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (5, 'łódzkie', '10', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (6, 'małopolskie', '12', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (7, 'mazowieckie', '14', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (8, 'opolskie', '16', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (9, 'podkarpackie', '18', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (10, 'podlaskie', '20', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (11, 'pomorskie', '22', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (12, 'śląskie', '24', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (13, 'świętokrzyskie', '26', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (14, 'warmińsko-mazurskie', '28', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (15, 'wielkopolskie', '30', 1);
+INSERT INTO ORG08_Region (RegionKey, RegionName, RegionCode, CountryKey) VALUES (16, 'zachodniopomorskie', '32', 1);
 COMMIT;

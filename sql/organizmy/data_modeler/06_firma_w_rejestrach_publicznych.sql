@@ -1,32 +1,40 @@
 -- Organizm 6: Firma w rejestrach publicznych
 -- Podmiot prawny stojący za ogłoszeniami, sprawdzony w rejestrach państwowych.
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
--- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy.
+-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy
+-- i bez indeksów warunkowych (nie są potrzebne do diagramu).
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
 CREATE TABLE ORG06_LegalForm (
     LegalFormKey        NUMBER(2)     NOT NULL,
     LegalFormName       VARCHAR2(60)  NOT NULL,
-    LegalFormShortName  VARCHAR2(20)
+    LegalFormShortName  VARCHAR2(20),
+    LegalFormCode       CHAR(3)
+);
+
+CREATE TABLE ORG06_PKDClassification (
+    PKDClassificationKey   NUMBER(1)     NOT NULL,
+    PKDClassificationName  VARCHAR2(20)  NOT NULL,
+    ValidFrom              DATE          NOT NULL
 );
 
 CREATE TABLE ORG06_PKDCode (
-    PKDCodeKey             NUMBER(4)      NOT NULL,
-    PKDSymbol              VARCHAR2(7)    NOT NULL,
-    PKDName                VARCHAR2(250)  NOT NULL,
-    ClassificationVersion  VARCHAR2(10)   NOT NULL
+    PKDCodeKey            NUMBER(4)      NOT NULL,
+    PKDSymbol             VARCHAR2(7)    NOT NULL,
+    PKDName               VARCHAR2(250)  NOT NULL,
+    PKDClassificationKey  NUMBER(1)      NOT NULL
 );
 
 CREATE TABLE ORG06_EmployerIdentifier (
-    EmployerIdentifierKey  NUMBER(9)     NOT NULL,
-    EmployerKey            NUMBER(8)     NOT NULL,
+    EmployerIdentifierKey  NUMBER(8)     NOT NULL,
+    EmployerKey            NUMBER(7)     NOT NULL,
     IdentifierTypeKey      NUMBER(2)     NOT NULL,
     IdentifierValue        VARCHAR2(30)  NOT NULL,
-    IsChecksumValid        CHAR(1)       NOT NULL
+    IsChecksumValid        NUMBER(1)     NOT NULL
 );
 
 CREATE TABLE ORG06_Employer (
-    EmployerKey        NUMBER(8)      NOT NULL,
+    EmployerKey        NUMBER(7)      NOT NULL,
     OfficialName       VARCHAR2(250)  NOT NULL,
     LegalFormKey       NUMBER(2)      NOT NULL,
     CountryKey         NUMBER(3)      NOT NULL,
@@ -35,10 +43,13 @@ CREATE TABLE ORG06_Employer (
 );
 
 CREATE TABLE ORG06_EmployerPKD (
-    EmployerPKDKey  NUMBER(9)  NOT NULL,
-    EmployerKey     NUMBER(8)  NOT NULL,
+    EmployerPKDKey  NUMBER(8)  NOT NULL,
+    EmployerKey     NUMBER(7)  NOT NULL,
     PKDCodeKey      NUMBER(4)  NOT NULL,
-    IsMainActivity  CHAR(1)    NOT NULL
+    IsMainActivity  NUMBER(1)  NOT NULL,
+    ValidFrom       DATE,
+    ValidTo         DATE,
+    IsCurrent       NUMBER(1)  NOT NULL
 );
 
 CREATE TABLE ORG06_IdentifierType (
@@ -48,11 +59,11 @@ CREATE TABLE ORG06_IdentifierType (
 );
 
 CREATE TABLE ORG06_RegistryCheck (
-    RegistryCheckKey   NUMBER(10)     NOT NULL,
-    EmployerKey        NUMBER(8)      NOT NULL,
+    RegistryCheckKey   NUMBER(9)      NOT NULL,
+    EmployerKey        NUMBER(7)      NOT NULL,
     PublicRegistryKey  NUMBER(2)      NOT NULL,
     CheckedAt          TIMESTAMP      NOT NULL,
-    WasFound           CHAR(1)        NOT NULL,
+    WasFound           NUMBER(1)      NOT NULL,
     ReportedStatusKey  NUMBER(2),
     ReportedName       VARCHAR2(250)
 );
@@ -73,19 +84,25 @@ COMMENT ON TABLE ORG06_LegalForm IS 'Forma prawna podmiotu.';
 COMMENT ON COLUMN ORG06_LegalForm.LegalFormKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG06_LegalForm.LegalFormName IS 'Pełna nazwa formy prawnej';
 COMMENT ON COLUMN ORG06_LegalForm.LegalFormShortName IS 'Skrót, np. sp. z o.o.';
+COMMENT ON COLUMN ORG06_LegalForm.LegalFormCode IS 'Kod szczególnej formy prawnej z rejestru REGON, np. 117 – tekst, bo kody zaczynają się od zera (019, 048, 099)';
+
+COMMENT ON TABLE ORG06_PKDClassification IS 'Wersja klasyfikacji PKD – wybierana z listy, a nie wpisywana.';
+COMMENT ON COLUMN ORG06_PKDClassification.PKDClassificationKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG06_PKDClassification.PKDClassificationName IS 'Nazwa klasyfikacji';
+COMMENT ON COLUMN ORG06_PKDClassification.ValidFrom IS 'Od kiedy obowiązuje';
 
 COMMENT ON TABLE ORG06_PKDCode IS 'Rodzaj działalności z klasyfikacji PKD.';
 COMMENT ON COLUMN ORG06_PKDCode.PKDCodeKey IS 'Klucz główny – numer wiersza';
-COMMENT ON COLUMN ORG06_PKDCode.PKDSymbol IS 'Symbol, np. 78.10.Z';
+COMMENT ON COLUMN ORG06_PKDCode.PKDSymbol IS 'Symbol, np. 52.10.B';
 COMMENT ON COLUMN ORG06_PKDCode.PKDName IS 'Nazwa działalności';
-COMMENT ON COLUMN ORG06_PKDCode.ClassificationVersion IS 'Wersja klasyfikacji, np. PKD 2007 albo PKD 2025';
+COMMENT ON COLUMN ORG06_PKDCode.PKDClassificationKey IS 'Wersja klasyfikacji';
 
 COMMENT ON TABLE ORG06_EmployerIdentifier IS 'Numer identyfikacyjny firmy – NIP, REGON, KRS albo numer zagraniczny.';
 COMMENT ON COLUMN ORG06_EmployerIdentifier.EmployerIdentifierKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG06_EmployerIdentifier.EmployerKey IS 'Firma';
 COMMENT ON COLUMN ORG06_EmployerIdentifier.IdentifierTypeKey IS 'Rodzaj numeru';
-COMMENT ON COLUMN ORG06_EmployerIdentifier.IdentifierValue IS 'Numer';
-COMMENT ON COLUMN ORG06_EmployerIdentifier.IsChecksumValid IS 'Czy numer przeszedł kontrolę sumy kontrolnej';
+COMMENT ON COLUMN ORG06_EmployerIdentifier.IdentifierValue IS 'Numer – tekst, bo może zaczynać się od zera';
+COMMENT ON COLUMN ORG06_EmployerIdentifier.IsChecksumValid IS '1 = numer przeszedł kontrolę sumy kontrolnej';
 
 COMMENT ON TABLE ORG06_Employer IS 'Podmiot prawny – jeden wiersz to jedna prawdziwa firma. Dla niego liczymy Trust Score.';
 COMMENT ON COLUMN ORG06_Employer.EmployerKey IS 'Klucz główny – numer wiersza';
@@ -95,11 +112,14 @@ COMMENT ON COLUMN ORG06_Employer.CountryKey IS 'Kraj rejestracji';
 COMMENT ON COLUMN ORG06_Employer.EmployerStatusKey IS 'Aktualny status';
 COMMENT ON COLUMN ORG06_Employer.RegistrationDate IS 'Data wpisu do rejestru';
 
-COMMENT ON TABLE ORG06_EmployerPKD IS 'Rodzaj działalności firmy – tabela łącząca firmy z kodami PKD.';
+COMMENT ON TABLE ORG06_EmployerPKD IS 'Rodzaj działalności firmy – przypisanie w czasie firmy do kodu PKD.';
 COMMENT ON COLUMN ORG06_EmployerPKD.EmployerPKDKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG06_EmployerPKD.EmployerKey IS 'Firma';
 COMMENT ON COLUMN ORG06_EmployerPKD.PKDCodeKey IS 'Kod PKD';
-COMMENT ON COLUMN ORG06_EmployerPKD.IsMainActivity IS 'Czy to działalność główna';
+COMMENT ON COLUMN ORG06_EmployerPKD.IsMainActivity IS '1 = działalność główna';
+COMMENT ON COLUMN ORG06_EmployerPKD.ValidFrom IS 'Od kiedy firma prowadzi tę działalność (puste = nie wiemy)';
+COMMENT ON COLUMN ORG06_EmployerPKD.ValidTo IS 'Do kiedy (puste = nadal)';
+COMMENT ON COLUMN ORG06_EmployerPKD.IsCurrent IS '1 = działalność prowadzona teraz';
 
 COMMENT ON TABLE ORG06_IdentifierType IS 'Rodzaj numeru identyfikacyjnego.';
 COMMENT ON COLUMN ORG06_IdentifierType.IdentifierTypeKey IS 'Klucz główny – numer wiersza';
@@ -111,7 +131,7 @@ COMMENT ON COLUMN ORG06_RegistryCheck.RegistryCheckKey IS 'Klucz główny – nu
 COMMENT ON COLUMN ORG06_RegistryCheck.EmployerKey IS 'Firma';
 COMMENT ON COLUMN ORG06_RegistryCheck.PublicRegistryKey IS 'Rejestr';
 COMMENT ON COLUMN ORG06_RegistryCheck.CheckedAt IS 'Kiedy sprawdzono';
-COMMENT ON COLUMN ORG06_RegistryCheck.WasFound IS 'Czy rejestr znalazł firmę';
+COMMENT ON COLUMN ORG06_RegistryCheck.WasFound IS '1 = rejestr znalazł firmę';
 COMMENT ON COLUMN ORG06_RegistryCheck.ReportedStatusKey IS 'Status podany przez rejestr';
 COMMENT ON COLUMN ORG06_RegistryCheck.ReportedName IS 'Nazwa podana przez rejestr';
 
@@ -127,24 +147,32 @@ COMMENT ON COLUMN ORG06_PublicRegistry.DailyQueryLimit IS 'Ile zapytań dziennie
 
 ALTER TABLE ORG06_LegalForm ADD CONSTRAINT ORG06_LegalForm_PK PRIMARY KEY (LegalFormKey);
 ALTER TABLE ORG06_LegalForm ADD CONSTRAINT ORG06_LegalForm_LegalFormName_UN UNIQUE (LegalFormName);
+ALTER TABLE ORG06_LegalForm ADD CONSTRAINT ORG06_LegalForm_LegalFormCode_UN UNIQUE (LegalFormCode);
+ALTER TABLE ORG06_LegalForm ADD CONSTRAINT ORG06_LegalForm_CK1 CHECK (REGEXP_LIKE(LegalFormCode, '^[0-9]{3}$'));
+ALTER TABLE ORG06_PKDClassification ADD CONSTRAINT ORG06_PKDClassification_PK PRIMARY KEY (PKDClassificationKey);
+ALTER TABLE ORG06_PKDClassification ADD CONSTRAINT ORG06_PKDClassification_PKDClassificationName_UN UNIQUE (PKDClassificationName);
 ALTER TABLE ORG06_PKDCode ADD CONSTRAINT ORG06_PKDCode_PK PRIMARY KEY (PKDCodeKey);
-ALTER TABLE ORG06_PKDCode ADD CONSTRAINT ORG06_PKDCode_UN UNIQUE (PKDSymbol, ClassificationVersion);
+ALTER TABLE ORG06_PKDCode ADD CONSTRAINT ORG06_PKDCode_UN UNIQUE (PKDSymbol, PKDClassificationKey);
+ALTER TABLE ORG06_PKDCode ADD CONSTRAINT ORG06_PKDCode_CK1 CHECK (REGEXP_LIKE(PKDSymbol, '^[0-9]{2}\.[0-9]{2}\.[A-Z]$'));
 ALTER TABLE ORG06_EmployerIdentifier ADD CONSTRAINT ORG06_EmployerIdentifier_PK PRIMARY KEY (EmployerIdentifierKey);
 ALTER TABLE ORG06_EmployerIdentifier ADD CONSTRAINT ORG06_EmployerIdentifier_UN UNIQUE (IdentifierTypeKey, IdentifierValue);
-ALTER TABLE ORG06_EmployerIdentifier ADD CONSTRAINT ORG06_EmployerIdentifier_IsChecksumValid_CK CHECK (IsChecksumValid IN ('T', 'N'));
+ALTER TABLE ORG06_EmployerIdentifier ADD CONSTRAINT ORG06_EmployerIdentifier_IsChecksumValid_CK CHECK (IsChecksumValid IN (0, 1));
 ALTER TABLE ORG06_Employer ADD CONSTRAINT ORG06_Employer_PK PRIMARY KEY (EmployerKey);
 ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_PK PRIMARY KEY (EmployerPKDKey);
-ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_UN UNIQUE (EmployerKey, PKDCodeKey);
-ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_IsMainActivity_CK CHECK (IsMainActivity IN ('T', 'N'));
+ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_IsMainActivity_CK CHECK (IsMainActivity IN (0, 1));
+ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
+ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_CK1 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
+ALTER TABLE ORG06_EmployerPKD ADD CONSTRAINT ORG06_EmployerPKD_CK2 CHECK (IsCurrent = 1 OR ValidTo IS NOT NULL);
 ALTER TABLE ORG06_IdentifierType ADD CONSTRAINT ORG06_IdentifierType_PK PRIMARY KEY (IdentifierTypeKey);
 ALTER TABLE ORG06_IdentifierType ADD CONSTRAINT ORG06_IdentifierType_IdentifierTypeName_UN UNIQUE (IdentifierTypeName);
 ALTER TABLE ORG06_RegistryCheck ADD CONSTRAINT ORG06_RegistryCheck_PK PRIMARY KEY (RegistryCheckKey);
-ALTER TABLE ORG06_RegistryCheck ADD CONSTRAINT ORG06_RegistryCheck_WasFound_CK CHECK (WasFound IN ('T', 'N'));
+ALTER TABLE ORG06_RegistryCheck ADD CONSTRAINT ORG06_RegistryCheck_WasFound_CK CHECK (WasFound IN (0, 1));
 ALTER TABLE ORG06_EmployerStatus ADD CONSTRAINT ORG06_EmployerStatus_PK PRIMARY KEY (EmployerStatusKey);
 ALTER TABLE ORG06_EmployerStatus ADD CONSTRAINT ORG06_EmployerStatus_EmployerStatusName_UN UNIQUE (EmployerStatusName);
 ALTER TABLE ORG06_PublicRegistry ADD CONSTRAINT ORG06_PublicRegistry_PK PRIMARY KEY (PublicRegistryKey);
 ALTER TABLE ORG06_PublicRegistry ADD CONSTRAINT ORG06_PublicRegistry_PublicRegistryName_UN UNIQUE (PublicRegistryName);
 
+ALTER TABLE ORG06_PKDCode ADD CONSTRAINT ORG06_PKDCode_PKDClassification_FK FOREIGN KEY (PKDClassificationKey) REFERENCES ORG06_PKDClassification (PKDClassificationKey);
 ALTER TABLE ORG06_EmployerIdentifier ADD CONSTRAINT ORG06_EmployerIdentifier_Employer_FK FOREIGN KEY (EmployerKey) REFERENCES ORG06_Employer (EmployerKey);
 ALTER TABLE ORG06_EmployerIdentifier ADD CONSTRAINT ORG06_EmployerIdentifier_IdentifierType_FK FOREIGN KEY (IdentifierTypeKey) REFERENCES ORG06_IdentifierType (IdentifierTypeKey);
 ALTER TABLE ORG06_Employer ADD CONSTRAINT ORG06_Employer_LegalForm_FK FOREIGN KEY (LegalFormKey) REFERENCES ORG06_LegalForm (LegalFormKey);

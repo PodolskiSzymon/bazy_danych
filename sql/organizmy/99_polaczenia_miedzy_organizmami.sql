@@ -1,15 +1,8 @@
 -- Połączenia między organizmami: klucze obce do tabel z innych organizmów.
 -- Uruchom po plikach 01–18. Wygenerowane z narzedzia/organizmy.py.
 
--- organizm 2: API platformy
-ALTER TABLE ORG02_PlatformAPI ADD CONSTRAINT ORG02_PlatformAPI_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES ORG01_SourcePlatform (SourcePlatformKey);
-
--- organizm 3: Endpointy i zwracane dane
-ALTER TABLE ORG03_APIEndpoint ADD CONSTRAINT ORG03_APIEndpoint_APIVersion_FK FOREIGN KEY (APIVersionKey) REFERENCES ORG02_APIVersion (APIVersionKey);
-ALTER TABLE ORG03_EndpointResponse ADD CONSTRAINT ORG03_EndpointResponse_DataFormat_FK FOREIGN KEY (DataFormatKey) REFERENCES ORG02_DataFormat (DataFormatKey);
-
 -- organizm 4: Odbiór danych z platformy
-ALTER TABLE ORG04_DataDelivery ADD CONSTRAINT ORG04_DataDelivery_APIEndpoint_FK FOREIGN KEY (APIEndpointKey) REFERENCES ORG03_APIEndpoint (APIEndpointKey);
+ALTER TABLE ORG04_DataDelivery ADD CONSTRAINT ORG04_DataDelivery_APIEndpoint_FK FOREIGN KEY (APIEndpointKey) REFERENCES ORG01_APIEndpoint (APIEndpointKey);
 
 -- organizm 5: Konto firmy na platformie
 ALTER TABLE ORG05_EmployerAccount ADD CONSTRAINT ORG05_EmployerAccount_SourcePlatform_FK FOREIGN KEY (SourcePlatformKey) REFERENCES ORG01_SourcePlatform (SourcePlatformKey);
@@ -23,11 +16,13 @@ ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_E
 ALTER TABLE ORG07_AccountEmployerLink ADD CONSTRAINT ORG07_AccountEmployerLink_Employer_FK FOREIGN KEY (EmployerKey) REFERENCES ORG06_Employer (EmployerKey);
 ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_AgencyEmployerKey_FK FOREIGN KEY (AgencyEmployerKey) REFERENCES ORG06_Employer (EmployerKey);
 ALTER TABLE ORG07_AgencyClient ADD CONSTRAINT ORG07_AgencyClient_ClientEmployerKey_FK FOREIGN KEY (ClientEmployerKey) REFERENCES ORG06_Employer (EmployerKey);
+ALTER TABLE ORG07_LinkChange ADD CONSTRAINT ORG07_LinkChange_SystemUser_FK FOREIGN KEY (SystemUserKey) REFERENCES ORG19_SystemUser (SystemUserKey);
 
 -- organizm 8: Ogłoszenie i miejsce pracy
 ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_EmployerAccount_FK FOREIGN KEY (EmployerAccountKey) REFERENCES ORG05_EmployerAccount (EmployerAccountKey);
 ALTER TABLE ORG08_JobPosting ADD CONSTRAINT ORG08_JobPosting_RawRecord_FK FOREIGN KEY (RawRecordKey) REFERENCES ORG04_RawRecord (RawRecordKey);
 ALTER TABLE ORG08_Location ADD CONSTRAINT ORG08_Location_Country_FK FOREIGN KEY (CountryKey) REFERENCES ORG01_Country (CountryKey);
+ALTER TABLE ORG08_Region ADD CONSTRAINT ORG08_Region_Country_FK FOREIGN KEY (CountryKey) REFERENCES ORG01_Country (CountryKey);
 
 -- organizm 9: Warunki zatrudnienia
 ALTER TABLE ORG09_PostingSalary ADD CONSTRAINT ORG09_PostingSalary_JobPosting_FK FOREIGN KEY (JobPostingKey) REFERENCES ORG08_JobPosting (JobPostingKey);
@@ -40,6 +35,7 @@ ALTER TABLE ORG10_PostingRequirement ADD CONSTRAINT ORG10_PostingRequirement_Job
 -- organizm 11: Historia i treść ogłoszenia
 ALTER TABLE ORG11_PostingEvent ADD CONSTRAINT ORG11_PostingEvent_JobPosting_FK FOREIGN KEY (JobPostingKey) REFERENCES ORG08_JobPosting (JobPostingKey);
 ALTER TABLE ORG11_PostingEvent ADD CONSTRAINT ORG11_PostingEvent_DataDelivery_FK FOREIGN KEY (DataDeliveryKey) REFERENCES ORG04_DataDelivery (DataDeliveryKey);
+ALTER TABLE ORG11_PostingEvent ADD CONSTRAINT ORG11_PostingEvent_SystemUser_FK FOREIGN KEY (SystemUserKey) REFERENCES ORG19_SystemUser (SystemUserKey);
 ALTER TABLE ORG11_PostingVersion ADD CONSTRAINT ORG11_PostingVersion_JobPosting_FK FOREIGN KEY (JobPostingKey) REFERENCES ORG08_JobPosting (JobPostingKey);
 ALTER TABLE ORG11_BoilerplatePattern ADD CONSTRAINT ORG11_BoilerplatePattern_Employer_FK FOREIGN KEY (EmployerKey) REFERENCES ORG06_Employer (EmployerKey);
 
@@ -62,10 +58,12 @@ ALTER TABLE ORG14_Reminder ADD CONSTRAINT ORG14_Reminder_Application_FK FOREIGN 
 -- organizm 15: Weryfikacja zgłoszenia
 ALTER TABLE ORG15_ReportCheck ADD CONSTRAINT ORG15_ReportCheck_RecruitmentReport_FK FOREIGN KEY (RecruitmentReportKey) REFERENCES ORG14_RecruitmentReport (RecruitmentReportKey);
 ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_RecruitmentReport_FK FOREIGN KEY (RecruitmentReportKey) REFERENCES ORG14_RecruitmentReport (RecruitmentReportKey);
+ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_SystemUser_FK FOREIGN KEY (SystemUserKey) REFERENCES ORG19_SystemUser (SystemUserKey);
 ALTER TABLE ORG15_ReportDevice ADD CONSTRAINT ORG15_ReportDevice_RecruitmentReport_FK FOREIGN KEY (RecruitmentReportKey) REFERENCES ORG14_RecruitmentReport (RecruitmentReportKey);
 
 -- organizm 16: Wykrywanie nadużyć
 ALTER TABLE ORG16_AbuseAlert ADD CONSTRAINT ORG16_AbuseAlert_Employer_FK FOREIGN KEY (EmployerKey) REFERENCES ORG06_Employer (EmployerKey);
+ALTER TABLE ORG16_AlertStatusChange ADD CONSTRAINT ORG16_AlertStatusChange_SystemUser_FK FOREIGN KEY (SystemUserKey) REFERENCES ORG19_SystemUser (SystemUserKey);
 ALTER TABLE ORG16_AlertReport ADD CONSTRAINT ORG16_AlertReport_RecruitmentReport_FK FOREIGN KEY (RecruitmentReportKey) REFERENCES ORG14_RecruitmentReport (RecruitmentReportKey);
 
 -- organizm 17: Sygnały o firmie
@@ -75,3 +73,7 @@ ALTER TABLE ORG17_SignalSnapshot ADD CONSTRAINT ORG17_SignalSnapshot_Employer_FK
 ALTER TABLE ORG18_ScoringWeight ADD CONSTRAINT ORG18_ScoringWeight_SignalType_FK FOREIGN KEY (SignalTypeKey) REFERENCES ORG17_SignalType (SignalTypeKey);
 ALTER TABLE ORG18_TrustScore ADD CONSTRAINT ORG18_TrustScore_SignalSnapshot_FK FOREIGN KEY (SignalSnapshotKey) REFERENCES ORG17_SignalSnapshot (SignalSnapshotKey);
 ALTER TABLE ORG18_ScoreReason ADD CONSTRAINT ORG18_ScoreReason_SignalType_FK FOREIGN KEY (SignalTypeKey) REFERENCES ORG17_SignalType (SignalTypeKey);
+ALTER TABLE ORG18_PublishedScore ADD CONSTRAINT ORG18_PublishedScore_Employer_FK FOREIGN KEY (EmployerKey) REFERENCES ORG06_Employer (EmployerKey);
+
+-- organizm 19: Użytkownicy systemu i role
+ALTER TABLE ORG19_EmployerRepresentative ADD CONSTRAINT ORG19_EmployerRepresentative_Employer_FK FOREIGN KEY (EmployerKey) REFERENCES ORG06_Employer (EmployerKey);

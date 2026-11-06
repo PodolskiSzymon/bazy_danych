@@ -1,7 +1,8 @@
 -- Organizm 15: Weryfikacja zgłoszenia
 -- Niezależne sprawdzenia każdego zgłoszenia i ocena, czy liczy się do Trust Score.
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
--- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy.
+-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy
+-- i bez indeksów warunkowych (nie są potrzebne do diagramu).
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
 CREATE TABLE ORG15_CheckType (
@@ -10,41 +11,52 @@ CREATE TABLE ORG15_CheckType (
 );
 
 CREATE TABLE ORG15_VerdictDecision (
-    VerdictDecisionKey   NUMBER(2)     NOT NULL,
+    VerdictDecisionKey   NUMBER(1)     NOT NULL,
     VerdictDecisionName  VARCHAR2(20)  NOT NULL
 );
 
 CREATE TABLE ORG15_ReportCheck (
-    ReportCheckKey        NUMBER(12)     NOT NULL,
-    RecruitmentReportKey  NUMBER(11)     NOT NULL,
+    ReportCheckKey        NUMBER(10)     NOT NULL,
+    RecruitmentReportKey  NUMBER(9)      NOT NULL,
     CheckTypeKey          NUMBER(2)      NOT NULL,
-    CheckResultKey        NUMBER(2)      NOT NULL,
+    CheckResultKey        NUMBER(1)      NOT NULL,
     CheckedAt             TIMESTAMP      NOT NULL,
     CheckDetails          VARCHAR2(400)
 );
 
 CREATE TABLE ORG15_ReportVerdict (
-    ReportVerdictKey      NUMBER(11)    NOT NULL,
-    RecruitmentReportKey  NUMBER(11)    NOT NULL,
-    VerdictDecisionKey    NUMBER(2)     NOT NULL,
-    ReportWeight          NUMBER(3,2)   NOT NULL,
-    RuleSetVersion        VARCHAR2(20)  NOT NULL,
-    DecidedAt             TIMESTAMP     NOT NULL
+    ReportVerdictKey      NUMBER(10)   NOT NULL,
+    RecruitmentReportKey  NUMBER(9)    NOT NULL,
+    VerdictDecisionKey    NUMBER(1)    NOT NULL,
+    VerdictRuleSetKey     NUMBER(3)    NOT NULL,
+    ReportWeight          NUMBER(3,2)  NOT NULL,
+    DecidedAt             TIMESTAMP    NOT NULL,
+    IsCurrent             NUMBER(1)    NOT NULL,
+    SystemUserKey         NUMBER(7)
+);
+
+CREATE TABLE ORG15_VerdictRuleSet (
+    VerdictRuleSetKey  NUMBER(3)      NOT NULL,
+    VersionLabel       VARCHAR2(20)   NOT NULL,
+    RuleDescription    VARCHAR2(300)  NOT NULL,
+    ValidFrom          DATE           NOT NULL,
+    ValidTo            DATE,
+    IsCurrent          NUMBER(1)      NOT NULL
 );
 
 CREATE TABLE ORG15_CheckResult (
-    CheckResultKey   NUMBER(2)     NOT NULL,
+    CheckResultKey   NUMBER(1)     NOT NULL,
     CheckResultName  VARCHAR2(30)  NOT NULL
 );
 
 CREATE TABLE ORG15_ReportDevice (
-    ReportDeviceKey       NUMBER(11)  NOT NULL,
-    RecruitmentReportKey  NUMBER(11)  NOT NULL,
-    DeviceFingerprintKey  NUMBER(10)  NOT NULL
+    ReportDeviceKey       NUMBER(9)  NOT NULL,
+    RecruitmentReportKey  NUMBER(9)  NOT NULL,
+    DeviceFingerprintKey  NUMBER(9)  NOT NULL
 );
 
 CREATE TABLE ORG15_DeviceFingerprint (
-    DeviceFingerprintKey  NUMBER(10)    NOT NULL,
+    DeviceFingerprintKey  NUMBER(9)     NOT NULL,
     FingerprintHash       VARCHAR2(64)  NOT NULL,
     FirstSeenAt           TIMESTAMP     NOT NULL,
     ExpiresAt             DATE          NOT NULL
@@ -66,13 +78,23 @@ COMMENT ON COLUMN ORG15_ReportCheck.CheckResultKey IS 'Wynik';
 COMMENT ON COLUMN ORG15_ReportCheck.CheckedAt IS 'Kiedy sprawdzono';
 COMMENT ON COLUMN ORG15_ReportCheck.CheckDetails IS 'Szczegóły, np. „aplikacja 34 dni temu”';
 
-COMMENT ON TABLE ORG15_ReportVerdict IS 'Ocena zgłoszenia – każda ponowna ocena to nowy wiersz.';
+COMMENT ON TABLE ORG15_ReportVerdict IS 'Ocena zgłoszenia – każda ponowna ocena to nowy wiersz, aktualna jest jedna.';
 COMMENT ON COLUMN ORG15_ReportVerdict.ReportVerdictKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG15_ReportVerdict.RecruitmentReportKey IS 'Zgłoszenie';
 COMMENT ON COLUMN ORG15_ReportVerdict.VerdictDecisionKey IS 'Decyzja';
+COMMENT ON COLUMN ORG15_ReportVerdict.VerdictRuleSetKey IS 'Według której wersji reguł';
 COMMENT ON COLUMN ORG15_ReportVerdict.ReportWeight IS 'Waga od 0 do 1';
-COMMENT ON COLUMN ORG15_ReportVerdict.RuleSetVersion IS 'Wersja reguł oceny';
 COMMENT ON COLUMN ORG15_ReportVerdict.DecidedAt IS 'Kiedy oceniono';
+COMMENT ON COLUMN ORG15_ReportVerdict.IsCurrent IS '1 = ocena aktualna';
+COMMENT ON COLUMN ORG15_ReportVerdict.SystemUserKey IS 'Kto ocenił (puste = program)';
+
+COMMENT ON TABLE ORG15_VerdictRuleSet IS 'Wersja reguł oceny zgłoszeń – wybierana z listy; aktualna jest jedna.';
+COMMENT ON COLUMN ORG15_VerdictRuleSet.VerdictRuleSetKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG15_VerdictRuleSet.VersionLabel IS 'Wersja, np. 1.0';
+COMMENT ON COLUMN ORG15_VerdictRuleSet.RuleDescription IS 'Co mówią reguły';
+COMMENT ON COLUMN ORG15_VerdictRuleSet.ValidFrom IS 'Od kiedy obowiązują';
+COMMENT ON COLUMN ORG15_VerdictRuleSet.ValidTo IS 'Do kiedy (puste = nadal)';
+COMMENT ON COLUMN ORG15_VerdictRuleSet.IsCurrent IS '1 = reguły używane teraz';
 
 COMMENT ON TABLE ORG15_CheckResult IS 'Wynik sprawdzenia.';
 COMMENT ON COLUMN ORG15_CheckResult.CheckResultKey IS 'Klucz główny – numer wiersza';
@@ -95,7 +117,13 @@ ALTER TABLE ORG15_VerdictDecision ADD CONSTRAINT ORG15_VerdictDecision_PK PRIMAR
 ALTER TABLE ORG15_VerdictDecision ADD CONSTRAINT ORG15_VerdictDecision_VerdictDecisionName_UN UNIQUE (VerdictDecisionName);
 ALTER TABLE ORG15_ReportCheck ADD CONSTRAINT ORG15_ReportCheck_PK PRIMARY KEY (ReportCheckKey);
 ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_PK PRIMARY KEY (ReportVerdictKey);
+ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
 ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_CK1 CHECK (ReportWeight BETWEEN 0 AND 1);
+ALTER TABLE ORG15_VerdictRuleSet ADD CONSTRAINT ORG15_VerdictRuleSet_PK PRIMARY KEY (VerdictRuleSetKey);
+ALTER TABLE ORG15_VerdictRuleSet ADD CONSTRAINT ORG15_VerdictRuleSet_VersionLabel_UN UNIQUE (VersionLabel);
+ALTER TABLE ORG15_VerdictRuleSet ADD CONSTRAINT ORG15_VerdictRuleSet_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
+ALTER TABLE ORG15_VerdictRuleSet ADD CONSTRAINT ORG15_VerdictRuleSet_CK1 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
+ALTER TABLE ORG15_VerdictRuleSet ADD CONSTRAINT ORG15_VerdictRuleSet_CK2 CHECK (IsCurrent = 1 OR ValidTo IS NOT NULL);
 ALTER TABLE ORG15_CheckResult ADD CONSTRAINT ORG15_CheckResult_PK PRIMARY KEY (CheckResultKey);
 ALTER TABLE ORG15_CheckResult ADD CONSTRAINT ORG15_CheckResult_CheckResultName_UN UNIQUE (CheckResultName);
 ALTER TABLE ORG15_ReportDevice ADD CONSTRAINT ORG15_ReportDevice_PK PRIMARY KEY (ReportDeviceKey);
@@ -106,4 +134,5 @@ ALTER TABLE ORG15_DeviceFingerprint ADD CONSTRAINT ORG15_DeviceFingerprint_Finge
 ALTER TABLE ORG15_ReportCheck ADD CONSTRAINT ORG15_ReportCheck_CheckType_FK FOREIGN KEY (CheckTypeKey) REFERENCES ORG15_CheckType (CheckTypeKey);
 ALTER TABLE ORG15_ReportCheck ADD CONSTRAINT ORG15_ReportCheck_CheckResult_FK FOREIGN KEY (CheckResultKey) REFERENCES ORG15_CheckResult (CheckResultKey);
 ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_VerdictDecision_FK FOREIGN KEY (VerdictDecisionKey) REFERENCES ORG15_VerdictDecision (VerdictDecisionKey);
+ALTER TABLE ORG15_ReportVerdict ADD CONSTRAINT ORG15_ReportVerdict_VerdictRuleSet_FK FOREIGN KEY (VerdictRuleSetKey) REFERENCES ORG15_VerdictRuleSet (VerdictRuleSetKey);
 ALTER TABLE ORG15_ReportDevice ADD CONSTRAINT ORG15_ReportDevice_DeviceFingerprint_FK FOREIGN KEY (DeviceFingerprintKey) REFERENCES ORG15_DeviceFingerprint (DeviceFingerprintKey);

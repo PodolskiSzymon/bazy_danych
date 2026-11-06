@@ -1,52 +1,56 @@
 -- Organizm 18: Trust Score i publikacja
 -- Wynik firmy policzony konkretną metodą, z pewnością i powodami – oraz to, co wolno pokazać kandydatowi.
 -- Wygenerowane z narzedzia/organizmy.py (python narzedzia/build_web.py) – zmiany wprowadzaj tam.
--- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy.
+-- Wersja do Oracle SQL Developer Data Modeler (File → Import → DDL File): bez przykładowych wierszy
+-- i bez indeksów warunkowych (nie są potrzebne do diagramu).
 -- Klucze obce do innych organizmów są w pliku 99_polaczenia_miedzy_organizmami.sql.
 
 CREATE TABLE ORG18_ScoringMethodType (
-    ScoringMethodTypeKey   NUMBER(2)     NOT NULL,
+    ScoringMethodTypeKey   NUMBER(1)     NOT NULL,
     ScoringMethodTypeName  VARCHAR2(40)  NOT NULL
 );
 
 CREATE TABLE ORG18_ScoringMethod (
-    ScoringMethodKey      NUMBER(4)     NOT NULL,
-    ScoringMethodTypeKey  NUMBER(2)     NOT NULL,
+    ScoringMethodKey      NUMBER(3)     NOT NULL,
+    ScoringMethodTypeKey  NUMBER(1)     NOT NULL,
     MethodVersion         VARCHAR2(20)  NOT NULL,
     ValidFrom             DATE          NOT NULL,
-    ValidTo               DATE
+    ValidTo               DATE,
+    IsCurrent             NUMBER(1)     NOT NULL
 );
 
 CREATE TABLE ORG18_ScoringWeight (
-    ScoringWeightKey  NUMBER(6)    NOT NULL,
-    ScoringMethodKey  NUMBER(4)    NOT NULL,
+    ScoringWeightKey  NUMBER(5)    NOT NULL,
+    ScoringMethodKey  NUMBER(3)    NOT NULL,
     SignalTypeKey     NUMBER(3)    NOT NULL,
     WeightValue       NUMBER(5,3)  NOT NULL
 );
 
 CREATE TABLE ORG18_TrustScore (
-    TrustScoreKey      NUMBER(11)   NOT NULL,
+    TrustScoreKey      NUMBER(10)   NOT NULL,
     SignalSnapshotKey  NUMBER(10)   NOT NULL,
-    ScoringMethodKey   NUMBER(4)    NOT NULL,
+    ScoringMethodKey   NUMBER(3)    NOT NULL,
     ScoreValue         NUMBER(3)    NOT NULL,
     ScoreConfidence    NUMBER(3,2)  NOT NULL,
     CalculatedAt       TIMESTAMP    NOT NULL
 );
 
 CREATE TABLE ORG18_ScoreReason (
-    ScoreReasonKey  NUMBER(12)     NOT NULL,
-    TrustScoreKey   NUMBER(11)     NOT NULL,
+    ScoreReasonKey  NUMBER(10)     NOT NULL,
+    TrustScoreKey   NUMBER(10)     NOT NULL,
     SignalTypeKey   NUMBER(3)      NOT NULL,
     ReasonRank      NUMBER(1)      NOT NULL,
     ReasonText      VARCHAR2(300)  NOT NULL
 );
 
 CREATE TABLE ORG18_PublishedScore (
-    PublishedScoreKey     NUMBER(10)  NOT NULL,
-    TrustScoreKey         NUMBER(11)  NOT NULL,
+    PublishedScoreKey     NUMBER(9)   NOT NULL,
+    EmployerKey           NUMBER(7)   NOT NULL,
+    TrustScoreKey         NUMBER(10)  NOT NULL,
     PublicationStatusKey  NUMBER(2)   NOT NULL,
     PublishedFrom         TIMESTAMP   NOT NULL,
-    PublishedTo           TIMESTAMP
+    PublishedTo           TIMESTAMP,
+    IsCurrent             NUMBER(1)   NOT NULL
 );
 
 CREATE TABLE ORG18_PublicationStatus (
@@ -58,12 +62,13 @@ COMMENT ON TABLE ORG18_ScoringMethodType IS 'Rodzaj metody liczenia wyniku.';
 COMMENT ON COLUMN ORG18_ScoringMethodType.ScoringMethodTypeKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG18_ScoringMethodType.ScoringMethodTypeName IS 'Nazwa rodzaju metody';
 
-COMMENT ON TABLE ORG18_ScoringMethod IS 'Metoda liczenia wyniku w konkretnej wersji.';
+COMMENT ON TABLE ORG18_ScoringMethod IS 'Metoda liczenia wyniku w konkretnej wersji; używana teraz jest jedna.';
 COMMENT ON COLUMN ORG18_ScoringMethod.ScoringMethodKey IS 'Klucz główny – numer wiersza';
 COMMENT ON COLUMN ORG18_ScoringMethod.ScoringMethodTypeKey IS 'Rodzaj metody';
 COMMENT ON COLUMN ORG18_ScoringMethod.MethodVersion IS 'Wersja';
 COMMENT ON COLUMN ORG18_ScoringMethod.ValidFrom IS 'Od kiedy używana';
 COMMENT ON COLUMN ORG18_ScoringMethod.ValidTo IS 'Do kiedy (puste = obecna)';
+COMMENT ON COLUMN ORG18_ScoringMethod.IsCurrent IS '1 = metoda używana teraz';
 
 COMMENT ON TABLE ORG18_ScoringWeight IS 'Waga sygnału w danej metodzie – tabela łącząca z wartością.';
 COMMENT ON COLUMN ORG18_ScoringWeight.ScoringWeightKey IS 'Klucz główny – numer wiersza';
@@ -86,12 +91,14 @@ COMMENT ON COLUMN ORG18_ScoreReason.SignalTypeKey IS 'Którego sygnału dotyczy'
 COMMENT ON COLUMN ORG18_ScoreReason.ReasonRank IS 'Kolejność ważności';
 COMMENT ON COLUMN ORG18_ScoreReason.ReasonText IS 'Tekst, np. „to samo ogłoszenie 7 razy w 9 miesięcy”';
 
-COMMENT ON TABLE ORG18_PublishedScore IS 'Wynik pokazany publicznie – osobno od wyniku roboczego.';
+COMMENT ON TABLE ORG18_PublishedScore IS 'Wynik pokazany publicznie – osobno od wyniku roboczego; dla firmy aktualna jest jedna publikacja.';
 COMMENT ON COLUMN ORG18_PublishedScore.PublishedScoreKey IS 'Klucz główny – numer wiersza';
+COMMENT ON COLUMN ORG18_PublishedScore.EmployerKey IS 'Której firmy dotyczy';
 COMMENT ON COLUMN ORG18_PublishedScore.TrustScoreKey IS 'Który wynik pokazujemy';
 COMMENT ON COLUMN ORG18_PublishedScore.PublicationStatusKey IS 'Stan publikacji';
 COMMENT ON COLUMN ORG18_PublishedScore.PublishedFrom IS 'Od kiedy';
 COMMENT ON COLUMN ORG18_PublishedScore.PublishedTo IS 'Do kiedy (puste = widoczny teraz)';
+COMMENT ON COLUMN ORG18_PublishedScore.IsCurrent IS '1 = publikacja aktualna';
 
 COMMENT ON TABLE ORG18_PublicationStatus IS 'Stan publikacji wyniku.';
 COMMENT ON COLUMN ORG18_PublicationStatus.PublicationStatusKey IS 'Klucz główny – numer wiersza';
@@ -101,7 +108,9 @@ ALTER TABLE ORG18_ScoringMethodType ADD CONSTRAINT ORG18_ScoringMethodType_PK PR
 ALTER TABLE ORG18_ScoringMethodType ADD CONSTRAINT ORG18_ScoringMethodType_ScoringMethodTypeName_UN UNIQUE (ScoringMethodTypeName);
 ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_PK PRIMARY KEY (ScoringMethodKey);
 ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_UN UNIQUE (ScoringMethodTypeKey, MethodVersion);
+ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
 ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_CK1 CHECK (ValidTo IS NULL OR ValidTo >= ValidFrom);
+ALTER TABLE ORG18_ScoringMethod ADD CONSTRAINT ORG18_ScoringMethod_CK2 CHECK (IsCurrent = 1 OR ValidTo IS NOT NULL);
 ALTER TABLE ORG18_ScoringWeight ADD CONSTRAINT ORG18_ScoringWeight_PK PRIMARY KEY (ScoringWeightKey);
 ALTER TABLE ORG18_ScoringWeight ADD CONSTRAINT ORG18_ScoringWeight_UN UNIQUE (ScoringMethodKey, SignalTypeKey);
 ALTER TABLE ORG18_TrustScore ADD CONSTRAINT ORG18_TrustScore_PK PRIMARY KEY (TrustScoreKey);
@@ -110,7 +119,9 @@ ALTER TABLE ORG18_TrustScore ADD CONSTRAINT ORG18_TrustScore_CK2 CHECK (ScoreCon
 ALTER TABLE ORG18_ScoreReason ADD CONSTRAINT ORG18_ScoreReason_PK PRIMARY KEY (ScoreReasonKey);
 ALTER TABLE ORG18_ScoreReason ADD CONSTRAINT ORG18_ScoreReason_UN UNIQUE (TrustScoreKey, ReasonRank);
 ALTER TABLE ORG18_PublishedScore ADD CONSTRAINT ORG18_PublishedScore_PK PRIMARY KEY (PublishedScoreKey);
+ALTER TABLE ORG18_PublishedScore ADD CONSTRAINT ORG18_PublishedScore_IsCurrent_CK CHECK (IsCurrent IN (0, 1));
 ALTER TABLE ORG18_PublishedScore ADD CONSTRAINT ORG18_PublishedScore_CK1 CHECK (PublishedTo IS NULL OR PublishedTo >= PublishedFrom);
+ALTER TABLE ORG18_PublishedScore ADD CONSTRAINT ORG18_PublishedScore_CK2 CHECK (IsCurrent = 1 OR PublishedTo IS NOT NULL);
 ALTER TABLE ORG18_PublicationStatus ADD CONSTRAINT ORG18_PublicationStatus_PK PRIMARY KEY (PublicationStatusKey);
 ALTER TABLE ORG18_PublicationStatus ADD CONSTRAINT ORG18_PublicationStatus_PublicationStatusName_UN UNIQUE (PublicationStatusName);
 

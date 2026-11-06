@@ -16,8 +16,8 @@ Etap obecny: **model tabel** – po uwagach prowadzącego zaczynamy od źródła
 | `docs/mapa-warstw.txt` | Mapa jako czysty tekst z identyfikatorami (np. `W3-P7`) – do wspólnego pliku z poprawkami |
 | `docs/img/` | Obrazy: cała struktura, każda warstwa, DFD poziomu 1, droga zgłoszenia |
 | `web/index.html` | Klikalna mapa: cała struktura → warstwa → szczegóły kafelka (otwórz w przeglądarce) |
-| `web/organizmy.html` | **Model tabel**: 18 organizmów od platformy źródłowej do Trust Score – diagramy jak w Data Modeler, opisy kolumn, warianty, pytania do prowadzącego, SQL. Widok **Opisy** (`organizmy.html#opisy`): każdy organizm opisany prostym językiem i krótko dla technicznych – do czytania i druku |
-| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…` – `18_…`), połączenia między organizmami (`99_…`) i `usun_wszystkie_tabele.sql`; w `data_modeler/` te same tabele bez przykładowych wierszy – do importu w Data Modeler |
+| `web/organizmy.html` | **Model tabel**: 17 organizmów (131 tabel) od platformy źródłowej do Trust Score i użytkowników systemu – diagramy jak w Data Modeler, opisy kolumn, szacunek liczby wierszy, warianty, pytania do prowadzącego, SQL, lista zmian po uwagach prowadzącego. Widok **Opisy** (`organizmy.html#opisy`): każdy organizm opisany prostym językiem i krótko dla technicznych – do czytania i druku |
+| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…`, `04_…` – `19_…`), połączenia między organizmami (`99_…`) i `usun_wszystkie_tabele.sql`; w `data_modeler/` te same tabele bez przykładowych wierszy – do importu w Data Modeler |
 | `narzedzia/` | Źródło treści (`data.py`, `organizmy.py`, `opisy_organizmow.py`) i generatory stron, rysunków oraz SQL |
 
 ## Model tabel – organizmy
@@ -25,28 +25,42 @@ Etap obecny: **model tabel** – po uwagach prowadzącego zaczynamy od źródła
 Strona `web/organizmy.html` (link jest też na górze mapy warstw). Każdy organizm odpowiada na dwa pytania:
 
 1. **Co to jest w szerszym kontekście?** – np. platforma to każde źródło ofert pracy, nie tylko portal.
-2. **Jakie mogą być warianty?** – każdy wariant, który się powtarza albo zmienia, dostaje własną tabelę: słownik (np. `PlatformType`), tabelę łączącą wiele do wielu (np. `PlatformMarket`) albo historię (np. `PartnerAgreement`).
+2. **Jakie mogą być warianty?** – każdy wariant, który się powtarza albo zmienia, dostaje własną tabelę: słownik (np. `PlatformType`), tabelę łączącą wiele do wielu (np. `PlatformMarket`) albo historię / przypisanie w czasie (np. `PartnerAgreement`, `PlatformMarket`).
 
-Konwencja jak na schemacie z zajęć: tabele po angielsku w PascalCase (`SourcePlatform`), klucz główny `<Tabela>Key` typu `NUMBER`, klucz obcy nazywa się tak samo jak klucz, do którego prowadzi. W bazie nazwa tabeli zaczyna się od `ORG` i numeru organizmu, np. `ORG01_SourcePlatform`, `ORG03_EndpointData` – dzięki temu tabele jednego organizmu stoją na liście obok siebie, a wpisanie `ORG03_` w wyszukiwarkę tabel (Database Actions → Navigator) pokazuje tylko organizm 3. Kolumny i klucze zostają bez przedrostka (`SourcePlatformKey`); przedrostki wyłącza `PRZEDROSTEK_TABEL = False` w `narzedzia/organizmy.py`. Organizmy są na razie osobne – tabela z innego organizmu jest na diagramie szarą ramką, a klucze obce między organizmami są w osobnym pliku `sql/organizmy/99_polaczenia_miedzy_organizmami.sql`.
+Konwencja jak na schemacie z zajęć: tabele po angielsku w PascalCase (`SourcePlatform`), klucz główny `<Tabela>Key` typu `NUMBER`, klucz obcy nazywa się tak samo jak klucz, do którego prowadzi. W bazie nazwa tabeli zaczyna się od `ORG` i numeru organizmu, np. `ORG01_SourcePlatform`, `ORG08_JobPosting` – dzięki temu tabele jednego organizmu stoją na liście obok siebie, a wpisanie `ORG08_` w wyszukiwarkę tabel (Database Actions → Navigator) pokazuje tylko organizm 8. Kolumny i klucze zostają bez przedrostka (`SourcePlatformKey`); przedrostki wyłącza `PRZEDROSTEK_TABEL = False` w `narzedzia/organizmy.py`. Organizm 1 powstał z połączenia dawnych organizmów 1–3 (platforma, API, endpointy) i ma klucze obce między wszystkimi swoimi tabelami; dlatego numery 2 i 3 są wolne. Pozostałe organizmy są na razie osobne – tabela z innego organizmu jest na diagramie szarą ramką, a klucze obce między organizmami są w osobnym pliku `sql/organizmy/99_polaczenia_miedzy_organizmami.sql`.
 
 | Etap | Organizmy |
 |---|---|
-| A. Źródło danych | 1 Platforma źródłowa · 2 API platformy · 3 Endpointy i zwracane dane · 4 Odbiór danych z platformy |
+| A. Źródło danych | 1 Źródło danych: platforma, API i endpointy (dawne 1–3) · 4 Odbiór danych z platformy |
 | B. Firma | 5 Konto firmy na platformie · 6 Firma w rejestrach publicznych · 7 Powiązanie kont z firmą |
 | C. Ogłoszenie | 8 Ogłoszenie i miejsce pracy · 9 Warunki zatrudnienia · 10 Wymagania i obowiązki · 11 Historia i treść ogłoszenia · 12 Podobne ogłoszenia i rodziny |
 | D. Kandydat i zgłoszenia | 13 Kandydat, aplikacje i zgody · 14 Zgłoszenie wyniku rekrutacji · 15 Weryfikacja zgłoszenia · 16 Wykrywanie nadużyć |
 | E. Ocena firmy | 17 Sygnały o firmie · 18 Trust Score i publikacja |
+| F. Zaplecze systemu | 19 Użytkownicy systemu i role |
 
-Jeszcze nierozpisane (po uwagach prowadzącego, tym samym sposobem): moderacja i odwołania, wnioski RODO, odznaka i raporty publiczne, personel i audyt, parametry i harmonogram, pamięć zapytań do AI.
+Jeszcze nierozpisane (po uwagach prowadzącego, tym samym sposobem): moderacja i odwołania, wnioski RODO, odznaka i raporty publiczne, dziennik audytu, parametry i harmonogram, pamięć zapytań do AI.
+
+### Zmiany po uwagach prowadzącego (omówienie projektu przychodni)
+
+Pełna lista z tabelami, których dotyczy: `web/organizmy.html#opisy/wnioski`.
+
+1. **Klucz bez znaczenia, kod urzędowy osobno** – kluczem jest zawsze numer `<Tabela>Key`; kody (forma prawna z REGON, np. `099`, województwo i miejscowość z TERYT, kraj, waluta, PKD, kod HTTP) są osobnymi kolumnami tekstowymi z warunkiem na format, bo mogą zaczynać się od zera.
+2. **Rozmiar klucza z szacunku liczby wierszy** – przy każdej tabeli jest szacunek, a z niego `NUMBER(n)` (np. do 20 wariantów → `NUMBER(2)`, do miliarda dostaw → `NUMBER(10)`).
+3. **Relacje jak w życiu** – platforma bywa kilku rodzajów naraz, ogłoszenie ma kilka poziomów i trybów pracy: tabele łączące zamiast jednej kolumny (`PlatformClassification`, `PostingSeniority`, `PostingWorkMode`).
+4. **Przypisanie w czasie zamiast usuwania** – `ValidFrom`, `ValidTo` i flaga `IsCurrent`; „jeden aktualny wiersz” pilnuje unikalny indeks warunkowy (`…_UX`).
+5. **Flagi 0/1** – `NUMBER(1)` z warunkiem `IN (0, 1)`.
+6. **Wybór z listy zamiast wpisywania** – nowe słowniki: `Region`, `PKDClassification`, `SimilarityMethod`, `VerdictRuleSet`, `MeasureUnit`.
+7. **Użytkownicy i role** – nowy organizm 19: konta, role z listy, role przypisane w czasie, przedstawiciele firm; decyzje moderatorów mają autora.
+8. **Spójne nazwy** – po angielsku, w liczbie pojedynczej.
 
 **Opisy organizmów** – widok „Opisy” na stronie (`web/organizmy.html#opisy`) i blok „Opis organizmu” w każdym organizmie. Każdy organizm jest opisany dwa razy: *dla każdego* (o czym jest, przykład, każda tabela prostym językiem; przez wszystkie organizmy idzie jeden zmyślony przykład firmy „Przykład Logistyka”) i *dla technicznych* (relacje, decyzje projektowe i ich skutki, czego baza jeszcze nie pilnuje, zależności między organizmami). Teksty są w `narzedzia/opisy_organizmow.py`; relacje i liczby generator wylicza sam.
 
-Wszystkie skrypty z `sql/organizmy/` zostały uruchomione w testowej bazie Oracle AI Database 26ai (118 tabel, bez błędów) i są założone we wspólnej bazie Oracle Cloud (bez pliku 99). Można je uruchomić w SQL Developer (VS Code albo przeglądarka).
+Wszystkie skrypty z `sql/organizmy/` zostały uruchomione w testowej bazie Oracle AI Database 26ai (131 tabel, 160 kluczy obcych razem z plikiem 99, 25 indeksów „jeden aktualny”, bez błędów; sprawdziliśmy też, że baza odrzuca złe dane, np. drugi aktualny etap umowy albo flagę 2) i są założone we wspólnej bazie Oracle Cloud (bez pliku 99). Można je uruchomić w SQL Developer (VS Code albo przeglądarka).
 
 ### Diagram w Oracle Data Modeler (jak na zajęciach)
 
-- **W przeglądarce, bez instalowania:** Database Actions → Launchpad → zakładka *Development* → *Data Modeler* → w zakładce *Diagrams* kliknij *New Diagram* → w zakładce *Navigator* wybierz tabele i wpisz `ORG03_` → przeciągnij tabele na diagram albo prawy klik → *Add Object with dependencies to Diagram*. Linie między tabelami pojawią się same, bo klucze obce są w bazie. Diagramy zapisują się w bazie (przy pierwszym użyciu Data Modeler zakłada tabelę `OSDDMW_DIAGRAMS`), więc cały zespół widzi te same.
-- **W programie Oracle SQL Developer Data Modeler:** *File → Import → DDL File* → `+` → plik z `sql/organizmy/data_modeler/` (np. `03_endpointy_i_zwracane_dane.sql`) → OK. Jeśli tabele nachodzą na siebie: prawy klik na tle diagramu → *Auto Layout*. `wszystkie_organizmy.sql` daje cały model naraz, razem z kluczami między organizmami.
+- **W przeglądarce, bez instalowania:** Database Actions → Launchpad → zakładka *Development* → *Data Modeler* → w zakładce *Diagrams* kliknij *New Diagram* → w zakładce *Navigator* wybierz tabele i wpisz `ORG01_` → przeciągnij tabele na diagram albo prawy klik → *Add Object with dependencies to Diagram*. Linie między tabelami pojawią się same, bo klucze obce są w bazie. Diagramy zapisują się w bazie (przy pierwszym użyciu Data Modeler zakłada tabelę `OSDDMW_DIAGRAMS`), więc cały zespół widzi te same.
+- **W programie Oracle SQL Developer Data Modeler:** *File → Import → DDL File* → `+` → plik z `sql/organizmy/data_modeler/` (np. `01_zrodlo_danych_platforma_api_i_endpointy.sql`) → OK. Jeśli tabele nachodzą na siebie: prawy klik na tle diagramu → *Auto Layout*. `wszystkie_organizmy.sql` daje cały model naraz, razem z kluczami między organizmami. Pliki w `data_modeler/` nie mają przykładowych wierszy ani indeksów „jeden aktualny”.
 
 Kroki według dokumentacji Oracle – w samym programie ich jeszcze nie sprawdziliśmy.
 
