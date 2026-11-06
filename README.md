@@ -16,9 +16,9 @@ Etap obecny: **model tabel** – po uwagach prowadzącego zaczynamy od źródła
 | `docs/mapa-warstw.txt` | Mapa jako czysty tekst z identyfikatorami (np. `W3-P7`) – do wspólnego pliku z poprawkami |
 | `docs/img/` | Obrazy: cała struktura, każda warstwa, DFD poziomu 1, droga zgłoszenia |
 | `web/index.html` | Klikalna mapa: cała struktura → warstwa → szczegóły kafelka (otwórz w przeglądarce) |
-| `web/organizmy.html` | **Model tabel**: 17 organizmów (131 tabel) od platformy źródłowej do Trust Score i użytkowników systemu – diagramy jak w Data Modeler, opisy kolumn, szacunek liczby wierszy, warianty, pytania do prowadzącego, SQL, lista zmian po uwagach prowadzącego. Widok **Opisy** (`organizmy.html#opisy`): każdy organizm opisany prostym językiem i krótko dla technicznych – do czytania i druku |
-| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…`, `04_…` – `19_…`), połączenia między organizmami (`99_…`) i `usun_wszystkie_tabele.sql`; w `data_modeler/` te same tabele bez przykładowych wierszy – do importu w Data Modeler |
-| `narzedzia/` | Źródło treści (`data.py`, `organizmy.py`, `opisy_organizmow.py`) i generatory stron, rysunków oraz SQL |
+| `web/organizmy.html` | **Model tabel**: 17 organizmów (131 tabel) od platformy źródłowej do Trust Score i użytkowników systemu – diagramy jak w Data Modeler, opisy kolumn, szacunek liczby wierszy, przykład na danych przy każdej tabeli, warianty, pytania do prowadzącego, SQL, lista zmian po uwagach prowadzącego. Widok **Opisy** (`organizmy.html#opisy`): każdy organizm opisany prostym językiem i krótko dla technicznych – do czytania i druku |
+| `sql/organizmy/` | Skrypty Oracle: jeden plik na organizm (`01_…`, `04_…` – `19_…`), połączenia między organizmami (`99_…`) `usun_wszystkie_tabele.sql` i `przyklady_danych.sql` (wiersze z przykładów na stronie); w `data_modeler/` te same tabele bez przykładowych wierszy – do importu w Data Modeler |
+| `narzedzia/` | Źródło treści (`data.py`, `organizmy.py`, `opisy_organizmow.py`, `przyklady.py`) i generatory stron, rysunków oraz SQL |
 
 ## Model tabel – organizmy
 
@@ -53,7 +53,7 @@ Pełna lista z tabelami, których dotyczy: `web/organizmy.html#opisy/wnioski`.
 7. **Użytkownicy i role** – nowy organizm 19: konta, role z listy, role przypisane w czasie, przedstawiciele firm; decyzje moderatorów mają autora.
 8. **Spójne nazwy** – po angielsku, w liczbie pojedynczej.
 
-**Opisy organizmów** – widok „Opisy” na stronie (`web/organizmy.html#opisy`) i blok „Opis organizmu” w każdym organizmie. Każdy organizm jest opisany dwa razy: *dla każdego* (o czym jest, przykład, każda tabela prostym językiem; przez wszystkie organizmy idzie jeden zmyślony przykład firmy „Przykład Logistyka”) i *dla technicznych* (relacje, decyzje projektowe i ich skutki, czego baza jeszcze nie pilnuje, zależności między organizmami). Teksty są w `narzedzia/opisy_organizmow.py`; relacje i liczby generator wylicza sam.
+**Opisy organizmów** – widok „Opisy” na stronie (`web/organizmy.html#opisy`) i blok „Opis organizmu” w każdym organizmie. Każdy organizm jest opisany dwa razy: *dla każdego* (o czym jest, przykład, każda tabela prostym językiem; przez wszystkie organizmy idzie jeden zmyślony przykład firmy „Przykład Logistyka”) i *dla technicznych* (relacje, decyzje projektowe i ich skutki, czego baza jeszcze nie pilnuje, zależności między organizmami). Teksty są w `narzedzia/opisy_organizmow.py`; relacje i liczby generator wylicza sam. Pod opisem każdej tabeli jest **przykład na danych**: mała tabelka z wierszami i wyjaśnienie, co z nich wynika. Wszystkie przykłady to jeden spójny zestaw (`narzedzia/przyklady.py`) – ta sama firma, ogłoszenie i kandydat we wszystkich organizmach, a numer klucza obcego ma obok podpis, np. `1 (pracuj.pl)`. Zestaw jest też w `sql/organizmy/przyklady_danych.sql` i został wstawiony do testowej bazy Oracle razem ze wszystkimi kluczami i warunkami (bez błędów).
 
 Wszystkie skrypty z `sql/organizmy/` zostały uruchomione w testowej bazie Oracle AI Database 26ai (131 tabel, 160 kluczy obcych razem z plikiem 99, 25 indeksów „jeden aktualny”, bez błędów; sprawdziliśmy też, że baza odrzuca złe dane, np. drugi aktualny etap umowy albo flagę 2) i są założone we wspólnej bazie Oracle Cloud (bez pliku 99). Można je uruchomić w SQL Developer (VS Code albo przeglądarka).
 

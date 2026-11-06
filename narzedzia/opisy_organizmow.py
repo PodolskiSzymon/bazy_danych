@@ -182,8 +182,8 @@ WSPOLNE = [
 # Opisy organizmów. Klucz to numer organizmu.
 #   o_czym   – akapity „o czym jest ten organizm”,
 #   przyklad – ciąg dalszy wspólnego przykładu,
-#   tabele   – (tabela, nazwa po polsku, opis[, przykład na danych]) – każda tabela organizmu dokładnie raz;
-#              przykład: {"wstep": tekst, "tabele": [(podpis, kolumny, wiersze)], "koniec": tekst},
+#   tabele   – (tabela, nazwa po polsku, opis) – każda tabela organizmu dokładnie raz; przykład na danych
+#              do każdej tabeli jest w przyklady.py,
 #   skrot    – jedno-dwa zdania dla technicznych,
 #   decyzje  – (decyzja, skutek),
 #   luki     – czego baza jeszcze nie pilnuje.
@@ -222,22 +222,7 @@ OPISY = {
              "Sześć rodzajów: portal z ofertami pracy, serwis ogłoszeń drobnych, agregator ofert (serwis, który zbiera "
              "oferty z innych serwisów), serwis społecznościowy, publiczny urząd pracy i strona kariery firmy. Rodzaje "
              "są w osobnej tabeli, żeby każdy był zawsze zapisany tak samo i żeby nowy rodzaj można było dopisać jednym "
-             "wierszem, bez przebudowy bazy.",
-             {"wstep": "Przykład na danych. Tabela rodzajów (PlatformType) ma 6 wierszy – każdy rodzaj ma swój numer:",
-              "tabele": [
-                  ("ORG01_PlatformType", ["PlatformTypeKey", "PlatformTypeName"],
-                   [(1, "Portal z ofertami pracy"), (2, "Serwis ogłoszeń drobnych"), (3, "Agregator ofert"),
-                    (4, "Serwis społecznościowy"), (5, "Publiczny urząd pracy"), (6, "Strona kariery firmy (ATS)")]),
-                  ("ORG01_PlatformClassification – która platforma jest jakiego rodzaju",
-                   ["PlatformClassificationKey", "SourcePlatformKey", "PlatformTypeKey", "IsMainType", "co to znaczy"],
-                   [(1, "1 (pracuj.pl)", 1, 1, "pracuj.pl to portal z ofertami pracy"),
-                    (2, "2 (OLX)", 2, 1, "OLX to głównie serwis ogłoszeń drobnych…"),
-                    (3, "2 (OLX)", 1, 0, "…a dodatkowo portal z ofertami pracy (OLX Praca)")]),
-              ],
-              "koniec": "OLX ma dwa wiersze, bo jest dwóch rodzajów naraz – jak lekarz, który jest chirurgiem i "
-                        "onkologiem. Główny rodzaj (flaga 1) może być tylko jeden. Gdy pojawi się zupełnie nowy rodzaj, "
-                        "np. aplikacja mobilna z ofertami pracy, wystarczy jeden nowy wiersz w PlatformType: 7 – "
-                        "„Aplikacja mobilna z ofertami”. Żadnej tabeli nie trzeba przebudowywać."}),
+             "wierszem, bez przebudowy bazy."),
             ("PlatformClassification", "Rodzaje każdej platformy",
              "Jedna platforma bywa kilku rodzajów naraz: OLX to serwis ogłoszeń drobnych i portal z ofertami pracy. Jedna "
              "kolumna „rodzaj” w tabeli platform by nie wystarczyła – tak jak jedna kolumna „specjalizacja” u lekarza, "
@@ -262,18 +247,7 @@ OPISY = {
              "etapy, dlatego nie ma tu jednej kolumny „czy partner”, tylko historia: każdy etap to nowy wiersz z datą "
              "„od kiedy”, „do kiedy” i flagą „aktualny”. Zapisujemy też datę podpisania i to, czy podpisano umowę "
              "powierzenia danych osobowych, której wymaga RODO. Baza nie przyjmie daty końca wcześniejszej niż data "
-             "początku, wymaga daty końca w etapie, który już nie trwa, i pozwala tylko na jeden aktualny etap.",
-             {"wstep": "Przykład na danych – trzy etapy umowy z pracuj.pl:",
-              "tabele": [
-                  ("ORG01_PartnerAgreement (wybrane kolumny)",
-                   ["PartnerAgreementKey", "SourcePlatformKey", "AgreementStatusKey", "ValidFrom", "ValidTo", "IsCurrent"],
-                   [(1, "1 (pracuj.pl)", "1 (Negocjacje)", "2026-10-01", "2026-10-31", 0),
-                    (2, "1 (pracuj.pl)", "2 (Pilotaż)", "2026-11-01", "2026-12-31", 0),
-                    (3, "1 (pracuj.pl)", "3 (Aktywna)", "2027-01-01", "puste", 1)]),
-              ],
-              "koniec": "Tak jak w przykładzie prowadzącego z lekarzem, który przechodzi między klinikami: dwa wiersze są "
-                        "zamknięte (flaga 0 i data końca), jeden jest aktualny (flaga 1). Starych etapów nie usuwamy. "
-                        "Gdyby ktoś chciał dać flagę 1 drugiemu wierszowi pracuj.pl, baza tego nie przyjmie."}),
+             "początku, wymaga daty końca w etapie, który już nie trwa, i pozwala tylko na jeden aktualny etap."),
             ("AgreementStatus", "Etapy umowy", "Pięć etapów: negocjacje, pilotaż, aktywna, zawieszona, rozwiązana."),
             ("PlatformAPI", "Kanały wymiany danych (API)",
              "Jeden wiersz to jedno API jednej platformy, np. „Partner API” pracuj.pl. Jedna platforma może mieć kilka "
@@ -532,17 +506,7 @@ OPISY = {
              "zero – i nie jest numerem wiersza: numerem zostaje LegalFormKey, który nic nie znaczy. Tak radził "
              "prowadzący przy kodach specjalizacji lekarskich. Na liście są też spółka akcyjna, jednoosobowa "
              "działalność gospodarcza, spółka cywilna, spółka jawna, fundacja, stowarzyszenie, jednostka sektora "
-             "publicznego i firma zagraniczna (dwie ostatnie bez jednego kodu).",
-             {"wstep": "Przykład na danych – trzy formy prawne:",
-              "tabele": [
-                  ("ORG06_LegalForm (wybrane wiersze)", ["LegalFormKey", "LegalFormName", "LegalFormShortName",
-                                                          "LegalFormCode"],
-                   [(1, "Spółka z ograniczoną odpowiedzialnością", "sp. z o.o.", "117"),
-                    (3, "Jednoosobowa działalność gospodarcza", "JDG", "099"),
-                    (4, "Spółka cywilna", "s.c.", "019")]),
-              ],
-              "koniec": "LegalFormKey to zwykły numer wiersza (1, 3, 4). Kod 099 zapisany jako liczba zamieniłby się w 99, "
-                        "dlatego kod jest tekstem, a baza sprawdza, że ma dokładnie trzy cyfry."}),
+             "publicznego i firma zagraniczna (dwie ostatnie bez jednego kodu)."),
             ("EmployerStatus", "Statusy firmy",
              "Sześć wariantów: aktywna, zawieszona, w likwidacji, w upadłości, wykreślona i nieznaleziona w rejestrze."),
             ("EmployerIdentifier", "Numery identyfikacyjne firm",
@@ -1429,16 +1393,7 @@ OPISY = {
             ("Role", "Role",
              "Pięć ról z opisem, co im wolno: administrator, moderator, analityk danych, inspektor ochrony danych i "
              "przedstawiciel firmy. Rolę wybieramy z listy, a nie wpisujemy – inaczej, jak mówił prowadzący, literówka "
-             "zrobiłaby z jednej roli dwie. Nowa rola, np. „audytor”, to jeden nowy wiersz.",
-             {"wstep": "Przykład na danych – role dwóch osób:",
-              "tabele": [
-                  ("ORG19_UserRole", ["UserRoleKey", "SystemUserKey", "RoleKey", "ValidFrom", "ValidTo", "IsCurrent"],
-                   [(1, "1 (moderator1@…)", "2 (Moderator)", "2026-11-01", "puste", 1),
-                    (2, "1 (moderator1@…)", "3 (Analityk danych)", "2026-12-01", "puste", 1),
-                    (3, "2 (hr@przyklad…)", "5 (Przedstawiciel firmy)", "2026-12-10", "puste", 1)]),
-              ],
-              "koniec": "Pierwsza osoba ma dwie role naraz, więc rola nie może być jedną kolumną w tabeli kont. Gdy "
-                        "przestanie być analitykiem, jej drugi wiersz dostanie datę końca i flagę 0."}),
+             "zrobiłaby z jednej roli dwie. Nowa rola, np. „audytor”, to jeden nowy wiersz."),
             ("UserRole", "Role użytkowników",
              "Jedna osoba ma kilka ról naraz, a rola może się skończyć. Dlatego to przypisanie w czasie: para "
              "„użytkownik – rola” z datą od, datą do i flagą „aktualna”. Baza pilnuje, żeby ta sama rola nie była "

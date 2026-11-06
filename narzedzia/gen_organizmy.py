@@ -13,6 +13,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from organizmy import DO_ROZPISANIA, ETAPY, ORGANIZMY, PRZEDROSTEK_TABEL, SCHEMAT_PROWADZACEGO  # noqa: E402
 from opisy_organizmow import ETAPY_OPIS, KONWENCJE, OPISY, SLOWNICZEK, WNIOSKI, WNIOSKI_WSTEP, WSPOLNE, WSTEP  # noqa: E402
+from przyklady import ETYKIETY, PRZYKLADY  # noqa: E402
 
 SQL_DIR = os.path.join(ROOT, "sql", "organizmy")
 DM_DIR = os.path.join(SQL_DIR, "data_modeler")  # same CREATE i klucze – do File → Import → DDL File
@@ -354,8 +355,9 @@ def sql_value(c, v):
     return f"'{s}'"
 
 
-def seed_order(names, tables):
-    """Kolejność wstawiania przykładowych wierszy: najpierw tabele, na które inne wskazują."""
+def seed_order(names, tables, all_tables=False):
+    """Kolejność wstawiania wierszy: najpierw tabele, na które inne wskazują (domyślnie tylko tabele z wierszami
+    startowymi)."""
     order, done = [], set()
 
     def visit(n):
@@ -369,7 +371,7 @@ def seed_order(names, tables):
 
     for n in names:
         visit(n)
-    return [n for n in order if tables[n]["rows"]]
+    return order if all_tables else [n for n in order if tables[n]["rows"]]
 
 
 def ux_expr(cond, cols):
@@ -597,28 +599,181 @@ def check_desc(tables, warnings):
         warnings += [f"organizm {o['id']}: opis tabeli {n}, której nie ma w organizmie" for n in described
                      if n not in o["own"]]
         words([d["skrot"]] + [x for pair in d["decyzje"] for x in pair] + d["luki"], f"organizm {o['id']}")
+    check_examples(tables, warnings, known)
 
 
-def data_example(ex=None):
-    """Przykład na danych przy opisie tabeli: krótki tekst i małe tabelki z wierszami."""
-    if not ex:
+# ───────────── przykład na danych przy każdej tabeli (przyklady.py) ─────────────
+LABEL_MAX = 40
+
+
+def example_rows(t):
+    """Wiersze przykładu z kluczem na początku: wiersze startowe (i „dodatkowe”) albo wiersze z przyklady.py."""
+    p = PRZYKLADY.get(t["name"], {})
+    if t["rows"]:
+        return [(i, *r) for i, r in enumerate(t["rows"], 1)] + [tuple(r) for r in p.get("dodatkowe", [])]
+    return [tuple(r) for r in (p.get("wiersze") or [])]
+
+
+def ex_row(tables, name, key):
+    return next((r for r in example_rows(tables[name]) if r[0] == key), None)
+
+
+def row_label(tables, name, key, depth=0):
+    """Krótki podpis wiersza do pokazania obok numeru klucza obcego, np. „pracuj.pl”."""
+    t = tables[name]
+    r = ex_row(tables, name, key)
+    if r is None:
+        return None
+    vals = dict(zip((c["name"] for c in t["columns"]), r))
+    fmt = ETYKIETY.get(name)
+    if fmt is None:
+        col = next((c["name"] for c in t["columns"][1:] if c["name"].endswith("Name") and "ref" not in c), None)
+        text = "" if col is None or vals[col] is None else str(vals[col])
+    else:
+        def sub(m):
+            col, follow = m.group(1), m.group(2)
+            v = vals[col]
+            if v is None:
+                return ""
+            if follow and depth < 2:
+                ref = next(c["ref"] for c in t["columns"] if c["name"] == col)
+                return row_label(tables, ref, v, depth + 1) or str(v)
+            return str(v)
+        text = re.sub(r"\{(\w+)(>?)\}", sub, fmt).strip()
+    if not text:
+        return None
+    return text if len(text) <= LABEL_MAX else text[:LABEL_MAX - 1].rstrip() + "…"
+
+
+def ex_cell(tables, c, v):
+    if v is None:
+        return '<td class="mn">puste</td>'
+    if "ref" in c:
+        label = row_label(tables, c["ref"], v)
+        if not label:
+            return f"<td>{v}</td>"
+        # podpis z własnym nawiasem, np. „Brak odpowiedzi (cisza)”, bez nawiasu w nawiasie
+        label = f"– {esc(label)}" if "(" in label else f"({esc(label)})"
+        cls = ' class="long-fk"' if len(label) > 24 else ""
+        return f'<td{cls}>{v} <span class="mn">{label}</span></td>'
+    if isinstance(v, float):
+        return "<td>" + f"{v:.4f}".rstrip("0").rstrip(".").replace(".", ",") + "</td>"
+    s = str(v)
+    return f'<td class="long">{esc(s)}</td>' if len(s) > 40 else f"<td>{esc(s)}</td>"
+
+
+def example_cols(t):
+    p = PRZYKLADY.get(t["name"], {})
+    return p.get("pokaz") or [c["name"] for c in t["columns"] if c["type"] != "CLOB"]
+
+
+def example_html(name, tables):
+    """Przykład na danych pod opisem tabeli: zdanie wstępu, mała tabelka z wierszami i wyjaśnienie."""
+    p = PRZYKLADY.get(name)
+    if not p:
         return ""
-    parts = [f'<p class="ex-h">{rich(ex["wstep"])}</p>']
-    for caption, cols, rows in ex["tabele"]:
-        head = "".join(f"<th>{esc(c)}</th>" for c in cols)
-        body = "".join("<tr>" + "".join(f"<td>{esc(v)}</td>" for v in r) + "</tr>" for r in rows)
-        parts.append(f'<div class="tscroll"><table class="vt ex-t"><caption>{esc(caption)}</caption>'
-                     f'<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>')
-    if ex.get("koniec"):
-        parts.append(f'<p class="ex-h">{rich(ex["koniec"])}</p>')
-    return f'<div class="ex-data">{"".join(parts)}</div>'
+    t = tables[name]
+    rows = example_rows(t)
+    if p.get("klucze"):
+        rows = [r for r in rows if r[0] in p["klucze"]]
+    names = [c["name"] for c in t["columns"]]
+    show = example_cols(t)
+    idx = [names.index(n) for n in show]
+    limit = p.get("ile") or len(rows)
+    why = p.get("znaczy")
+    head = "".join(f"<th>{esc(n)}</th>" for n in show) + ("<th>co to znaczy</th>" if why else "")
+    body = []
+    for j, r in enumerate(rows[:limit]):
+        cells = "".join(ex_cell(tables, t["columns"][i], r[i]) for i in idx)
+        if why:
+            cells += f"<td>{rich(why[j])}</td>"
+        body.append(f"<tr>{cells}</tr>")
+    rest = len(rows) - limit
+    if rest > 0:
+        body.append(f'<tr><td class="mn" colspan="{len(show) + bool(why)}">… i jeszcze '
+                    f'{num(rest, ("wiersz", "wiersze", "wierszy"))}</td></tr>')
+    notes = [n for n, ok in (("wybrane kolumny", len(show) < len(names)), ("wybrane wiersze", bool(p.get("klucze")))) if ok]
+    caption = t["sql"] + (f" ({', '.join(notes)})" if notes else "")
+    return (f'<div class="ex-data"><p class="ex-h">{rich(p["wstep"])}</p>'
+            f'<div class="tscroll"><table class="vt ex-t"><caption>{esc(caption)}</caption>'
+            f'<thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
+            f'<p class="ex-h">{rich(p["koniec"])}</p></div>')
+
+
+def check_examples(tables, warnings, known):
+    """Każda tabela ma przykład; wiersze pasują do kolumn, wymagane są wypełnione, klucze obce wskazują na wiersze."""
+    for n in PRZYKLADY:
+        if n not in tables:
+            warnings.append(f"przykład dla tabeli {n}, której nie ma w modelu")
+    for n, t in tables.items():
+        p = PRZYKLADY.get(n)
+        if not p:
+            warnings.append(f"tabela {n}: brak przykładu na danych (przyklady.py)")
+            continue
+        where = f"przykład {n}"
+        if t["rows"] and p.get("wiersze"):
+            warnings.append(f"{where}: tabela ma wiersze startowe – przykład je bierze, dopisz tylko „dodatkowe”")
+        if not t["rows"] and p.get("dodatkowe"):
+            warnings.append(f"{where}: „dodatkowe” są tylko dla tabel z wierszami startowymi")
+        rows = example_rows(t)
+        if not rows:
+            warnings.append(f"{where}: brak wierszy")
+        keys = [r[0] for r in rows]
+        if len(set(keys)) != len(keys):
+            warnings.append(f"{where}: powtórzony klucz")
+        for r in rows:
+            if len(r) != len(t["columns"]):
+                warnings.append(f"{where}: wiersz {r[0]} ma {len(r)} wartości, a tabela {len(t['columns'])} kolumn")
+                continue
+            for c, v in zip(t["columns"], r):
+                if v is None and not c["null"]:
+                    warnings.append(f"{where}: wiersz {r[0]}: pusta wymagana kolumna {c['name']}")
+                elif v is not None and "ref" in c and ex_row(tables, c["ref"], v) is None:
+                    warnings.append(f"{where}: wiersz {r[0]}: {c['name']} = {v}, a w przykładzie {c['ref']} nie ma "
+                                    f"takiego wiersza")
+                elif c.get("flag") and v not in (0, 1, None):
+                    warnings.append(f"{where}: wiersz {r[0]}: flaga {c['name']} = {v}")
+        names = [c["name"] for c in t["columns"]]
+        for col in p.get("pokaz") or []:
+            if col not in names:
+                warnings.append(f"{where}: w „pokaz” jest {col}, a nie ma takiej kolumny")
+        if len(example_cols(t)) > 9:
+            warnings.append(f"{where}: za dużo kolumn ({len(example_cols(t))}) – wybierz je w „pokaz”")
+        shown = [r for r in rows if not p.get("klucze") or r[0] in p["klucze"]][:p.get("ile") or None]
+        if p.get("znaczy") and len(p["znaczy"]) != len(shown):
+            warnings.append(f"{where}: „znaczy” ma {len(p['znaczy'])} zdań, a pokazanych wierszy jest {len(shown)}")
+        for text in (p["wstep"], p["koniec"]):
+            for code in CODE.findall(text):
+                for w in re.findall(r"\b[A-Z][a-z]+(?:[A-Z][A-Za-z]*)+\b", code):
+                    if w not in known:
+                        warnings.append(f"{where}: w tekście jest {w}, a nie ma takiej tabeli ani kolumny")
+
+
+def sql_examples(tables):
+    """Skrypt INSERT ze wszystkimi przykładami (bez wierszy startowych z plików organizmów) – do sprawdzenia w bazie."""
+    out = ["-- Przykłady na danych ze strony organizmy.html: te same wiersze, które są w opisach tabel.",
+           "-- Uruchom po plikach 01–19 (wiersze startowe słowników są już w nich); plik 99 nie jest potrzebny.",
+           "-- Każdy wiersz ma ustalony klucz, więc skrypt da się uruchomić tylko raz (drugi raz: naruszenie klucza).", ""]
+    for n in seed_order(list(tables), tables, all_tables=True):
+        t = tables[n]
+        p = PRZYKLADY.get(n, {})
+        rows = p.get("dodatkowe", []) if t["rows"] else (p.get("wiersze") or [])
+        for r in rows:
+            vals = []
+            for c, v in zip(t["columns"], r):
+                if isinstance(v, str) and c["type"].startswith("TIMESTAMP") and len(v) == 16:
+                    v += ":00"
+                vals.append(sql_value(c, v))
+            out.append(f"INSERT INTO {t['sql']} ({', '.join(c['name'] for c in t['columns'])}) VALUES ({', '.join(vals)});")
+    out.append("COMMIT;")
+    return "\n".join(out) + "\n"
 
 
 def desc_plain(o, tables):
     d = OPISY[o["id"]]
     about = "".join(f"<p>{rich(p)}</p>" for p in d["o_czym"])
-    rows = "".join(f'<div><dt><b>{esc(name_pl)}</b> {tref(tables[n])}</dt><dd>{rich(text)}{data_example(*ex)}</dd></div>'
-                   for n, name_pl, text, *ex in d["tabele"] if n in tables)
+    rows = "".join(f'<div><dt><b>{esc(name_pl)}</b> {tref(tables[n])}</dt><dd><p class="dd-t">{rich(text)}</p>{example_html(n, tables)}</dd></div>'
+                   for n, name_pl, text in d["tabele"] if n in tables)
     return (f'<div class="dv dv-prosto"><p class="dv-h">Dla każdego</p>'
             f'<h4 class="dh">O czym jest ten organizm</h4>{about}'
             f'<h4 class="dh">Przykład</h4><p class="example">{rich(d["przyklad"])}</p>'
@@ -983,6 +1138,8 @@ def main():
         f.write(sql_links(tables))
     with open(os.path.join(SQL_DIR, "usun_wszystkie_tabele.sql"), "w", encoding="utf-8") as f:
         f.write(sql_drop(tables))
+    with open(os.path.join(SQL_DIR, "przyklady_danych.sql"), "w", encoding="utf-8") as f:
+        f.write(sql_examples(tables))
     os.makedirs(DM_DIR, exist_ok=True)
     for old in os.listdir(DM_DIR):
         if old.endswith(".sql"):
